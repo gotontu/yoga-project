@@ -1,1 +1,93 @@
-<h1>My Firebase Project</h1>
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI Yoga Master - 智能瑜伽綜合版</title>
+    
+    <!-- MediaPipe 函式庫 -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+    
+    <!-- 圖表函式庫 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- 引入外部 CSS 與 JS -->
+    <link rel="stylesheet" href="style.css">
+    <script type="module" src="script.js"></script>
+</head>
+<body>
+
+    <!-- 登入與歡迎畫面 (保留一號的質感設計，結合二號的防呆機制) -->
+    <div id="landing-page">
+        <h1 class="hero-title">AI Yoga Master</h1>
+        <p id="user-welcome" class="hero-subtitle">請先登入以記錄你的練習成果</p>
+        <button id="login-btn" class="start-btn btn-google">使用 Google 帳號登入</button>
+        <button id="start-btn" class="start-btn" style="display: none;">開始體驗</button>
+    </div>
+
+    <!-- 主要操作區塊 -->
+    <div id="main-app" style="display: none;">
+        <h1>AI Yoga Master</h1>
+        
+        <div class="user-info" id="user-display" style="color: #a4b0be; margin-bottom: 15px;">使用者：載入中...</div>
+        
+        <!-- 控制面板：整合所有動作與登出按鈕 -->
+        <div id="control-panel">
+            <span style="color: #a4b0be;">選擇動作：</span>
+            <button id="btn-tree" class="menu-btn active">大樹式</button>
+            <button id="btn-squat" class="menu-btn">深蹲</button>
+            <button id="btn-warrior" class="menu-btn">戰士一式</button>
+            <button id="btn-raise" class="menu-btn">平舉</button>
+            <button id="logout-btn" class="menu-btn" style="background-color: #6c757d; color: white; margin-left: 10px;">登出</button>
+        </div>
+
+        <!-- 影像與狀態顯示區塊 -->
+        <div id="video-container">
+            <div id="loading">載入鏡頭與 AI 模型中...</div>
+            <video id="video" width="640" height="480" autoplay playsinline muted></video>
+            <canvas id="canvas" width="640" height="480"></canvas>
+
+            <div id="status-display">
+                <div id="pose-title">大樹式偵測</div>
+                
+                <div id="tree-info">
+                    <div class="status-title">手部狀態：</div>
+                    <div id="arm-status" class="status-value">等待姿勢...</div>
+                    <div class="status-title">腿部狀態：</div>
+                    <div id="leg-status" class="status-value">等待姿勢...</div>
+                </div>
+                
+                <div id="squat-info" style="display: none;">
+                    <div class="status-title">身體狀態：</div>
+                    <div id="squat-status" class="status-value">請開始深蹲</div>
+                </div>
+
+                <div id="generic-info" style="display: none;">
+                    <div class="status-title">動作提示：</div>
+                    <div id="pose-results" class="status-value">等待偵測...</div>
+                </div>
+
+                <div id="save-status" style="margin-top: 10px; font-size: 14px; font-weight: bold; color: #2ed573;"></div>
+            </div>
+        </div>
+
+        <div id="history-controls" style="margin-top: 20px; text-align: center;">
+            <button id="toggle-history-btn" class="menu-btn" style="background-color: #747d8c; color: white;">查看歷史紀錄</button>
+        </div>
+
+        <div id="history-container" style="display: none; background: rgba(255,255,255,0.9); padding: 20px; border-radius: 15px; margin-top: 20px; width: 640px; color: #333;">
+            <h2 style="text-align: center; margin-bottom: 15px;">📊 我的練習進度 (最近 7 次)</h2>
+            <canvas id="historyChart"></canvas>
+            <h3 style="margin-top: 20px; border-top: 1px solid #ddd; padding-top: 15px;">📜 歷史明細</h3>
+            <ul id="history-list" style="list-style: none; padding: 0; max-height: 200px; overflow-y: auto;">
+                <li style="color: #999;">載入中...</li>
+            </ul>
+        </div>
+        
+    </div>
+
+</body>
+</html>
