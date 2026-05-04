@@ -1,20 +1,22 @@
 // ==========================================
-// 🌟 1. 引入 Firebase SDK (使用組員的 10.8.0 Firestore 版本)
+// 🌟 1. 引入 Firebase SDK (統一使用 10.8.0 版本)
 // ==========================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, collection, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+// 加入 Realtime Database 模組
+import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
 // 使用組員的 Firebase 配置
 const firebaseConfig = {
-    apiKey: "AIzaSyA3smEkfryuwXH9h-kIMHd18YLAz2NaM4I",
-    authDomain: "mygoodgoodproject.firebaseapp.com",
-    projectId: "mygoodgoodproject",
-    storageBucket: "mygoodgoodproject.firebasestorage.app",
-    messagingSenderId: "133466828365",
-    appId: "1:133466828365:web:67039e0aa2fd8012127604",
-    measurementId: "G-VP9YCD34SX"
-};
+    apiKey: "AIzaSyCstuIQhwz_Oxc6Q7T_9rbve8AcR6y276w",
+    authDomain: "ourgoodgoodproject.firebaseapp.com",
+    projectId: "ourgoodgoodproject",
+    storageBucket: "ourgoodgoodproject.firebasestorage.app",
+    messagingSenderId: "174602665216",
+    appId: "1:174602665216:web:335339073c8d5a00efc7e5",
+    measurementId: "G-2Y3VQZJRCC"
+  };
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
