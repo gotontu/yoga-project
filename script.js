@@ -287,7 +287,6 @@ function handlePoseSuccess(poseNameChinese) {
         }
     }
 }
-
 // ==========================================
 // 2. 綁定按鈕事件與切換邏輯
 // ==========================================
@@ -298,6 +297,9 @@ function switchPose(poseName) {
     // 切換動作時，計時器歸零
     perfectStartTime = 0;
     hasSavedThisRep = false;
+
+    // 每次切換動作時，先清空訊息欄，避免文字殘留！
+    if (saveStatusDiv) saveStatusDiv.innerText = '';
 
     [btnTree, btnSquat, btnRaise].forEach(btn => btn?.classList.remove('active'));
     if(btnFlow) btnFlow.classList.remove('active');
@@ -326,12 +328,21 @@ function switchPose(poseName) {
 
 startBtn.addEventListener('click', startApp);
 
-// 🌟 點擊單一動作時，要退出連續模式
-btnTree?.addEventListener('click', () => { isRoutineMode = false; switchPose('tree'); });
-btnSquat?.addEventListener('click', () => { isRoutineMode = false; switchPose('squat'); });
-btnRaise?.addEventListener('click', () => { isRoutineMode = false; switchPose('Raise'); });
+// 🌟 修改這裡：點擊單一動作時，除了退出連續模式，也確保訊息欄被清空
+btnTree?.addEventListener('click', () => { 
+    isRoutineMode = false; 
+    switchPose('tree'); 
+});
+btnSquat?.addEventListener('click', () => { 
+    isRoutineMode = false; 
+    switchPose('squat'); 
+});
+btnRaise?.addEventListener('click', () => { 
+    isRoutineMode = false; 
+    switchPose('Raise'); 
+});
 
-// 🌟 連續挑戰按鈕事件
+// 🌟 連續挑戰按鈕事件 (維持不變，透過 setTimeout 覆蓋剛清空的文字)
 if (btnFlow) {
     btnFlow.addEventListener('click', () => {
         isRoutineMode = true;
@@ -341,6 +352,7 @@ if (btnFlow) {
         switchPose(yogaRoutine[currentRoutineIndex]); 
         btnFlow.classList.add('active'); // 讓按鈕亮起
         
+        // 利用延遲 0.1 秒來顯示專屬文字，避免被 switchPose 清空
         setTimeout(() => {
             if (saveStatusDiv) {
                 saveStatusDiv.innerText = "🧘‍♀️ 瑜珈挑戰開始！請準備第一個動作";
