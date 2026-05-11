@@ -234,6 +234,10 @@ function handlePoseSuccess(poseNameChinese) {
                 saveStatusDiv.innerHTML = `<span style="font-size: 18px;">🎉 完美！休息一下，<b>5秒</b>後進入：<b>${nextPoseName}</b></span>`;
                 saveStatusDiv.style.color = "#3498db";
             }
+            // 🌟 新增用語音：延遲 1.5 秒再唸，避免跟成功祝賀語音重疊
+            setTimeout(() => {
+                speakHint(`完美！休息一下，5秒後進入${nextPoseName}`, 500);
+            }, 1500);
 
             setTimeout(() => {
                 switchPose(nextPose);
@@ -243,6 +247,8 @@ function handlePoseSuccess(poseNameChinese) {
                     saveStatusDiv.innerText = `👉 請開始動作：${nextPoseName}`;
                     saveStatusDiv.style.color = "#f39c12";
                 }
+                // 🌟 新增用語音：休息結束，提示開始動作
+                speakHint(`請開始動作：${nextPoseName}`, 500);
             }, 5000);
             
         } else {
@@ -250,6 +256,10 @@ function handlePoseSuccess(poseNameChinese) {
                 saveStatusDiv.innerHTML = `🏆 <b>恭喜你！今日瑜珈挑戰全數完成！</b>`;
                 saveStatusDiv.style.color = "#ff4757";
             }
+            // 🌟 新增用語音：全部通關祝賀
+            setTimeout(() => {
+                speakHint("恭喜你！今日瑜珈挑戰全數完成！你太棒了！", 500);
+            }, 1500);
             isRoutineMode = false;
             isTransitioning = false;
             if(btnFlow) btnFlow.classList.remove('active');
@@ -320,6 +330,8 @@ if (btnFlow) {
                 saveStatusDiv.innerText = "🧘‍♀️ 瑜珈挑戰開始！請準備第一個動作";
                 saveStatusDiv.style.color = "#f39c12";
             }
+            // 🌟 新增用語音：宣告挑戰開始
+            speakHint("瑜珈挑戰開始！請準備第一個動作", 500);
         }, 100);
     });
 }
@@ -501,9 +513,9 @@ function onResults(results) {
                         if (perfectStartTime === 0) perfectStartTime = Date.now();
                         const holdDuration = Date.now() - perfectStartTime;
 
-                        if (holdDuration >= 5000) {
-                            speakHint("平舉完成，太棒了！", 1000); 
+                        if (holdDuration >= 5000) { 
                             if (!hasSavedThisRep) handlePoseSuccess('平舉');
+                            speakHint("平舉完成，太棒了！", 1000);
                         } else {
                             const secondsLeft = Math.ceil((5000 - holdDuration) / 1000);
                             poseResultsDiv.innerHTML = `<span style="color: var(--success-color); font-weight: bold;">PERFECT! 請維持 ${secondsLeft} 秒...</span>`;
