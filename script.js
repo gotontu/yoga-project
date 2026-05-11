@@ -1,7 +1,7 @@
 // 🌟 1. 引入 Firebase SDK
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, collection, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, addDoc, collection, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { getDatabase } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
 // 🌟 2. Firebase 配置 
@@ -105,19 +105,49 @@ if(logoutBtn) {
 // ==========================================
 // 自動存檔防呆與歷史紀錄
 // ==========================================
+// async function saveDailyRecord(poseType, status) {
+//     if (!currentUser || !canSave) return;
+//     canSave = false; 
+
+//     const today = new Date().toLocaleDateString('zh-TW').replace(/\//g, '-');
+//     const userRef = doc(db, "users", currentUser.uid, "history", today);
+//     try {
+//         await setDoc(userRef, {
+//             date: today,
+//             lastPose: poseType,
+//             status: status,
+//             timestamp: new Date()
+//         }, { merge: true });
+        
+//         if(saveStatusDiv) saveStatusDiv.innerText = `✅ ${poseType} 已自動存檔 (${new Date().toLocaleTimeString()})`;
+        
+//         loadHistoryData(); 
+
+//         setTimeout(() => { 
+//             canSave = true; 
+//             if(saveStatusDiv) saveStatusDiv.innerText = ''; 
+//         }, 5000); 
+
+//     } catch (e) { console.error("雲端存檔失敗", e); }
+// }
+
 async function saveDailyRecord(poseType, status) {
     if (!currentUser || !canSave) return;
     canSave = false; 
 
     const today = new Date().toLocaleDateString('zh-TW').replace(/\//g, '-');
-    const userRef = doc(db, "users", currentUser.uid, "history", today);
+    
+    // 🌟 1. 改用 collection 指向資料夾，而不是具體某個日期文件
+    const historyCol = collection(db, "users", currentUser.uid, "history");
+    
     try {
-        await setDoc(userRef, {
+        // 🌟 2. 改用 addDoc，Firebase 會自動為每一次動作產生不重複的亂數 ID
+        await addDoc(historyCol, {
             date: today,
             lastPose: poseType,
             status: status,
             timestamp: new Date()
-        }, { merge: true });
+        });
         
         if(saveStatusDiv) saveStatusDiv.innerText = `✅ ${poseType} 已自動存檔 (${new Date().toLocaleTimeString()})`;
         
