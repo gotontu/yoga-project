@@ -1,7 +1,7 @@
 // 🌟 1. 引入 Firebase SDK
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, addDoc, collection, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, addDoc, collection, query, orderBy, limit, getDocs , increment} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { getDatabase } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
 // 🌟 2. Firebase 配置 
@@ -123,6 +123,9 @@ async function saveDailyRecord(poseType, status) {
         if(saveStatusDiv) saveStatusDiv.innerText = `✅ ${poseType} 已自動存檔 (${new Date().toLocaleTimeString()})`;
         
         loadHistoryData(); 
+
+        // 🌟 新增這行：成功維持 5 秒存檔後，自動加 10 分到排行榜！
+        uploadScore(10);
 
         setTimeout(() => { 
             canSave = true; 
@@ -443,3 +446,81 @@ const camera = new Camera(videoElement, {
     onFrame: async () => { await pose.send({image: videoElement}); },
     width: 640, height: 480
 });
+
+// ==========================================
+// 🏆 排行榜系統
+// ==========================================
+async function uploadScore(points) {
+    if (!currentUser) return;
+    
+    // 指向排行榜中該使用者的資料
+    const userLeaderboardRef = doc(db, "leaderboard", currentUser.uid);
+    try {
+        // 🌟 使用 increment 自動加上分數，並記錄使用者名稱
+        await setDoc(userLeaderboardRef, {
+            name: currentUser.displayName,
+            score: increment(points),
+            lastUpdate: new Date()
+        }, { merge: true });
+        
+        // 如果排行榜目前是打開的，就自動重新載入最新排名
+        if (isLeaderboardVisible) {
+            loadLeaderboard();
+        }
+    } catch (e) {
+        console.error("更新分數失敗", e);
+    }
+}
+
+// 控制排行榜顯示與隱藏
+const toggleLeaderboardBtn = document.getElementById('toggle-leaderboard-btn');
+const leaderboardContainer = document.getElementById('leaderboard-container');
+let isLeaderboardVisible = false;
+
+if (toggleLeaderboardBtn) {
+    toggleLeaderboardBtn.addEventListener('click', () => {
+        isLeaderboardVisible = !isLeaderboardVisible;
+        if (isLeaderboardVisible) {
+            leaderboardContainer.style.display = 'block';
+            toggleLeaderboardBtn.innerText = '隱藏排行榜';
+            toggleLeaderboardBtn.style.backgroundColor = '#ff4757';
+            loadLeaderboard(); // 打開時去雲端抓資料
+        } else {
+            leaderboardContainer.style.display = 'none';
+            toggleLeaderboardBtn.innerText = '🏆 查看全球排行榜';
+            toggleLeaderboardBtn.style.backgroundColor = '#f39c12';
+        }
+    });
+}
+
+// 讀取前 10 名資料
+async function loadLeaderboard() {
+    const leaderboardCol = collection(db, "leaderboard");
+    // 依據 score 分數由高到低 (desc) 排列，取前 10 名
+    const q = query(leaderboardCol, orderBy("score", "desc"), limit(10));
+    
+    try {
+        const querySnapshot = await getDocs(q);
+        const listElement = document.getElementById("leaderboard-list");
+        if (!listElement) return;
+        
+        listElement.innerHTML = ""; // 清空舊畫面
+        let rank = 1;
+        
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            // 設定前三名圖示
+            let medal = rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : `🏅 ${rank}.`;
+            
+            const li = document.createElement("li");
+            li.innerHTML = `<strong>${medal}</strong> ${data.name} <span style="float:right; color:#ff9800; font-weight:bold;">${data.score} 分</span>`;
+            li.style.padding = "10px 0";
+            li.style.borderBottom = "1px solid #ffe0b2";
+            listElement.appendChild(li);
+            
+            rank++;
+        });
+    } catch (e) {
+        console.error("讀取排行榜失敗: ", e);
+    }
+}
