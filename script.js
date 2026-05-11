@@ -493,10 +493,13 @@ function onResults(results) {
                     if (squatKneeAngle < 140) {
                         if (squatKneeAngle > 110) {
                             squatStatus = "再蹲低一點！"; squatColor = "yellow"; 
+                            speakHint("再蹲低一點"); // 🌟 新增：提醒蹲低
                         } else if (squatHipAngle > 120) {
                             squatStatus = "錯誤：屁股要翹高，身體不要太直！"; squatColor = "var(--error-color)";
+                            speakHint("屁股要翹高，身體不要太直"); // 🌟 新增
                         } else {
                             squatStatus = "標準深蹲！繼續保持！"; squatColor = "var(--success-color)";
+                            speakHint("標準深蹲！繼續保持！"); // 🌟 新增
                         }
                     }
 
@@ -546,7 +549,7 @@ function onResults(results) {
                         
                         if (perfectStartTime === 0) perfectStartTime = Date.now();
                         const holdDuration = Date.now() - perfectStartTime;
-                        speakHint("平舉姿勢完美，請撐住"); // 🌟 新增用語音：剛達標時的鼓勵
+                        speakHint("平舉完成，太棒了！", 1000); // 🌟 新增用語音：完成時祝賀
 
                         if (holdDuration >= 5000) {
                             // 🌟 替換成集中處理函數
@@ -554,7 +557,7 @@ function onResults(results) {
                         } else {
                             const secondsLeft = Math.ceil((5000 - holdDuration) / 1000);
                             poseResultsDiv.innerHTML = `<span style="color: var(--success-color); font-weight: bold;">PERFECT! 請維持 ${secondsLeft} 秒...</span>`;
-                            speakHint("平舉完成，太棒了！", 1000); // 🌟 新增用語音：完成時祝賀
+                            speakHint("平舉姿勢完美，請撐住"); // 🌟 新增用語音：剛達標時的鼓勵
                         }
                     } else {
                         poseResultsDiv.innerHTML = errors.map(e => `<div style="color: var(--error-color); margin-bottom: 5px;">${e}</div>`).join('');
