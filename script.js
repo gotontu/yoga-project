@@ -173,12 +173,34 @@ async function loadHistoryData() {
         const scores = [];
         const listItems = [];
 
+        // querySnapshot.forEach((doc) => {
+        //     const data = doc.data();
+        //     dates.push(data.date);
+        //     scores.push(data.status === 'Perfect' ? 100 : 50);
+        //     listItems.push(`<li style="padding: 5px 0; border-bottom: 1px solid #eee;">📅 ${data.date} - ${data.lastPose}: <strong>${data.status}</strong></li>`);
+        // });
+
         querySnapshot.forEach((doc) => {
             const data = doc.data();
             dates.push(data.date);
             scores.push(data.status === 'Perfect' ? 100 : 50);
-            listItems.push(`<li style="padding: 5px 0; border-bottom: 1px solid #eee;">📅 ${data.date} - ${data.lastPose}: <strong>${data.status}</strong></li>`);
+        
+            // 1. 處理時間轉換
+            let timeString = "";
+            if (data.timestamp) {
+                // 將 Firebase Timestamp 轉成一般時間，並取出「時:分:秒」
+                const dateObj = data.timestamp.toDate ? data.timestamp.toDate() : new Date(data.timestamp);
+                timeString = dateObj.toLocaleTimeString('zh-TW', { hour12: false }); 
+            }
+        
+            // 2. 將轉換好的時間 (timeString) 塞進清單的 HTML 中
+            listItems.push(`<li style="padding: 8px 0; border-bottom: 1px solid #eee;">
+                📅 ${data.date} 
+                <span style="color: #747d8c; font-size: 0.85em; margin: 0 5px;">[${timeString}]</span> 
+                - ${data.lastPose}: <strong style="color: var(--success-color);">${data.status}</strong>
+            </li>`);
         });
+        
 
         renderHistoryChart(dates.reverse(), scores.reverse());
         const listContainer = document.getElementById('history-list');
