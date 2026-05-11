@@ -40,7 +40,8 @@
             <button id="btn-tree" class="menu-btn active">大樹式</button>
             <button id="btn-squat" class="menu-btn">深蹲</button>
             <button id="btn-raise" class="menu-btn">平舉</button>
-            <button id="btn-flow" class="menu-btn">🔥 連續挑戰</button>
+            <button id="btn-flow" class="menu-btn" style="background-color: #f39c12; color: white; font-weight: bold; margin-left: 10px;">🔥 連續挑戰</button>
+            
             <button id="logout-btn" class="menu-btn" style="background-color: #6c757d; color: white; margin-left: 10px;">登出</button>
         </div>
 
@@ -75,12 +76,44 @@
         </div>
 
         <div id="history-controls" style="margin-top: 20px; text-align: center;">
-            <button id="toggle-history-btn" class="menu-btn" style="background-color: #747d8c; color: white;">查看歷史紀錄</button>
-            <!-- 🌟 新增的排行榜按鈕 -->
+            <button id="btn-profile" class="menu-btn" style="background-color: #9b59b6; color: white;">👤 個人中心</button>
+            <button id="toggle-history-btn" class="menu-btn" style="background-color: #747d8c; color: white; margin-left: 10px;">查看歷史紀錄</button>
             <button id="toggle-leaderboard-btn" class="menu-btn" style="background-color: #f39c12; color: white; margin-left: 10px;">🏆 查看全球排行榜</button>
         </div>
 
-        <div id="history-container" style="display: none; background: rgba(255,255,255,0.9); padding: 20px; border-radius: 15px; margin-top: 20px; width: 640px; color: #333;">
+        <!-- 個人中心顯示區塊 -->
+        <div id="profile-container" style="display: none; background: rgba(255,255,255,0.9); padding: 0; border-radius: 15px; margin-top: 20px; width: 640px; color: #333; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden;">
+            <div style="background: linear-gradient(135deg, #a29bfe, #6c5ce7); padding: 30px; text-align: center; color: white; position: relative;">
+                <img id="profile-avatar" src="" alt="Avatar" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid white; object-fit: cover; background: #ddd; margin-bottom: 10px;">
+                <h2 id="profile-name" style="margin: 0 0 10px 0; font-size: 24px;">載入中...</h2>
+                <span id="profile-rank" style="background: #f1c40f; color: #d35400; padding: 5px 15px; border-radius: 20px; font-size: 14px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">判定中...</span>
+            </div>
+
+            <div style="padding: 20px; display: flex; justify-content: space-around; text-align: center; border-bottom: 1px solid #eee; background: #f8f9fa;">
+                <div>
+                    <div style="font-size: 14px; color: #7f8c8d;">累積積分</div>
+                    <div id="profile-total-score" style="font-size: 26px; font-weight: bold; color: #e67e22;">0</div>
+                </div>
+                <div>
+                    <div style="font-size: 14px; color: #7f8c8d;">練習天數</div>
+                    <div id="profile-days-count" style="font-size: 26px; font-weight: bold; color: #3498db;">0</div>
+                </div>
+                <div>
+                    <div style="font-size: 14px; color: #7f8c8d;">Perfect 總數</div>
+                    <div id="profile-perfect-count" style="font-size: 26px; font-weight: bold; color: #2ecc71;">0</div>
+                </div>
+            </div>
+
+            <div style="padding: 20px; text-align: center; background: white;">
+                <h3 style="font-size: 16px; color: #34495e; margin-bottom: 15px;">📊 動作偏好分析</h3>
+                <div style="width: 250px; height: 250px; margin: 0 auto;">
+                    <canvas id="posePreferenceChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 歷史紀錄顯示區塊 -->
+        <div id="history-container" style="display: none; background: rgba(255,255,255,0.9); padding: 20px; border-radius: 15px; margin-top: 20px; width: 640px; color: #333; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
             <h2 style="text-align: center; margin-bottom: 15px;">📊 我的練習進度 (最近 7 次)</h2>
             <canvas id="historyChart"></canvas>
             <h3 style="margin-top: 20px; border-top: 1px solid #ddd; padding-top: 15px;">📜 歷史明細</h3>
@@ -89,7 +122,7 @@
             </ul>
         </div>
         
-        <!-- 🌟 新增的排行榜顯示區塊 -->
+        <!-- 排行榜顯示區塊 -->
         <div id="leaderboard-container" style="display: none; background: rgba(255,255,255,0.9); padding: 20px; border-radius: 15px; margin-top: 20px; width: 640px; color: #333; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
             <h2 style="text-align: center; margin-bottom: 15px; color: #e65100;">🏆 全球瑜珈大師排行榜</h2>
             <ul id="leaderboard-list" style="list-style: none; padding: 0; margin: 0; font-size: 18px;">
@@ -98,6 +131,5 @@
         </div>
         
     </div>
-
 </body>
 </html>
