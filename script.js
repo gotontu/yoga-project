@@ -383,6 +383,27 @@ function startApp() {
     }, 500);
 }
 
+// 🎤 AI 語音教練系統
+let lastSpeakTime = 0; // 紀錄上次講話的時間
+
+function speakHint(text, cooldown = 3000) {
+    const currentTime = Date.now();
+    
+    // 防呆機制：如果正在講話，或是距離上次開口還不到設定的冷卻時間，就先閉嘴
+    if (window.speechSynthesis.speaking || currentTime - lastSpeakTime < cooldown) {
+        return;
+    }
+
+    // 建立語音實例
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'zh-TW'; // 設定為中文
+    utterance.rate = 1.2;     // 語速稍微調快一點 (1.0 是一般速度)
+    utterance.pitch = 1.0;    // 音高
+    
+    window.speechSynthesis.speak(utterance);
+    lastSpeakTime = currentTime; // 更新最後講話時間
+}
+
 // ==========================================
 // 4. AI 偵測邏輯 (已加入換場防護與自動推進)
 // ==========================================
@@ -525,6 +546,7 @@ function onResults(results) {
                         
                         if (perfectStartTime === 0) perfectStartTime = Date.now();
                         const holdDuration = Date.now() - perfectStartTime;
+                        speakHint("平舉姿勢完美，請撐住"); // 🌟 新增用語音：剛達標時的鼓勵
 
                         if (holdDuration >= 5000) {
                             // 🌟 替換成集中處理函數
@@ -532,11 +554,17 @@ function onResults(results) {
                         } else {
                             const secondsLeft = Math.ceil((5000 - holdDuration) / 1000);
                             poseResultsDiv.innerHTML = `<span style="color: var(--success-color); font-weight: bold;">PERFECT! 請維持 ${secondsLeft} 秒...</span>`;
+                            speakHint("平舉完成，太棒了！", 1000); // 🌟 新增用語音：完成時祝賀
                         }
                     } else {
                         poseResultsDiv.innerHTML = errors.map(e => `<div style="color: var(--error-color); margin-bottom: 5px;">${e}</div>`).join('');
                         statusDisplay.classList.add('error'); statusDisplay.classList.remove('perfect');
                         perfectStartTime = 0; hasSavedThisRep = false;
+
+                        // 🌟 新增用語音：如果陣列裡有錯誤，直接把第一個錯誤唸出來糾正！
+                        if (errors.length > 0) {
+                            speakHint(errors[0]); 
+                        }
                     }
                 }
             }
