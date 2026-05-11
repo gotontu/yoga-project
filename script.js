@@ -13,7 +13,7 @@ const firebaseConfig = {
     messagingSenderId: "174602665216",
     appId: "1:174602665216:web:335339073c8d5a00efc7e5",
     measurementId: "G-2Y3VQZJRCC"
-  };
+};
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -44,6 +44,7 @@ const saveStatusDiv = document.getElementById('save-status');
 const btnTree = document.getElementById('btn-tree');
 const btnSquat = document.getElementById('btn-squat');
 const btnRaise = document.getElementById('btn-raise');
+const btnFlow = document.getElementById('btn-flow'); // 🌟 新增連續挑戰按鈕
 const startBtn = document.getElementById('start-btn');
 const loginBtn = document.getElementById('login-btn'); 
 const logoutBtn = document.getElementById('logout-btn');
@@ -51,15 +52,21 @@ const userWelcome = document.getElementById('user-welcome');
 const userDisplay = document.getElementById('user-display');
 
 // ==========================================
-// 全域變數 & 瑜珈資料庫 (已移除戰士一式)
+// 全域變數 & 瑜珈資料庫
 // ==========================================
 let currentPoseMode = 'tree'; 
 let currentUser = null; 
 let canSave = true; 
 
-// 🌟 新增這兩個變數：用來計算「連續維持時間」
+// 計算「連續維持時間」的變數
 let perfectStartTime = 0;   
 let hasSavedThisRep = false;
+
+// 🌟 新增：連續動作套餐(Yoga Flow)變數
+const yogaRoutine = ['tree', 'squat', 'Raise']; // 套餐順序
+let currentRoutineIndex = 0; // 目前進行到第幾關
+let isRoutineMode = false;   // 是否開啟挑戰模式
+let isTransitioning = false; // 是否正在「換場休息中」
 
 const YOGA_DATABASE = {
     "Raise": [
@@ -108,11 +115,11 @@ async function saveDailyRecord(poseType, status) {
 
     const today = new Date().toLocaleDateString('zh-TW').replace(/\//g, '-');
     
-    // 🌟 1. 改用 collection 指向資料夾，而不是具體某個日期文件
+    // 改用 collection 指向資料夾
     const historyCol = collection(db, "users", currentUser.uid, "history");
     
     try {
-        // 🌟 2. 改用 addDoc，Firebase 會自動為每一次動作產生不重複的亂數 ID
+        // 改用 addDoc，Firebase 會自動產生不重複的亂數 ID
         await addDoc(historyCol, {
             date: today,
             lastPose: poseType,
@@ -120,16 +127,16 @@ async function saveDailyRecord(poseType, status) {
             timestamp: new Date()
         });
         
-        if(saveStatusDiv) saveStatusDiv.innerText = `✅ ${poseType} 已自動存檔 (${new Date().toLocaleTimeString()})`;
+        if(saveStatusDiv && !isRoutineMode) saveStatusDiv.innerText = `✅ ${poseType} 已自動存檔 (${new Date().toLocaleTimeString()})`;
         
         loadHistoryData(); 
 
-        // 🌟 新增這行：成功維持 5 秒存檔後，自動加 10 分到排行榜！
+        // 成功維持 5 秒存檔後，自動加 10 分到排行榜！
         uploadScore(10);
 
         setTimeout(() => { 
             canSave = true; 
-            if(saveStatusDiv) saveStatusDiv.innerText = ''; 
+            if(saveStatusDiv && !isTransitioning && !isRoutineMode) saveStatusDiv.innerText = ''; 
         }, 5000); 
 
     } catch (e) { console.error("雲端存檔失敗", e); }
@@ -206,33 +213,88 @@ function renderHistoryChart(labels, dataPoints) {
 }
 
 // ==========================================
+// 🌟 核心：集中處理動作成功與換場邏輯
+// ==========================================
+function handlePoseSuccess(poseNameChinese) {
+    saveDailyRecord(poseNameChinese, 'Perfect'); 
+    hasSavedThisRep = true;
+
+    if (isRoutineMode) {
+        // 【連續模式】：進入換場休息
+        isTransitioning = true; 
+        currentRoutineIndex++;
+        
+        if (currentRoutineIndex < yogaRoutine.length) {
+            let nextPose = yogaRoutine[currentRoutineIndex];
+            let nextPoseName = nextPose === 'tree' ? '大樹式' : (nextPose === 'squat' ? '深蹲' : '平舉');
+            
+            if (saveStatusDiv) {
+                saveStatusDiv.innerHTML = `<span style="font-size: 18px;">🎉 完美！休息一下，<b>5秒</b>後進入：<b>${nextPoseName}</b></span>`;
+                saveStatusDiv.style.color = "#3498db";
+            }
+
+            // 5 秒後自動切換下一個動作
+            setTimeout(() => {
+                switchPose(nextPose);
+                if(btnFlow) btnFlow.classList.add('active'); // 確保挑戰按鈕亮著
+                isTransitioning = false; // 解除休息鎖定
+                if (saveStatusDiv) {
+                    saveStatusDiv.innerText = `👉 請開始動作：${nextPoseName}`;
+                    saveStatusDiv.style.color = "#f39c12";
+                }
+            }, 5000);
+            
+        } else {
+            // 全數通關
+            if (saveStatusDiv) {
+                saveStatusDiv.innerHTML = `🏆 <b>恭喜你！今日瑜珈挑戰全數完成！</b>`;
+                saveStatusDiv.style.color = "#ff4757";
+            }
+            isRoutineMode = false;
+            isTransitioning = false;
+            if(btnFlow) btnFlow.classList.remove('active');
+            
+            // 通關 2 秒後，自動打開歷史紀錄
+            setTimeout(() => { if(!isHistoryVisible && toggleHistoryBtn) toggleHistoryBtn.click(); }, 2000); 
+        }
+    } else {
+        // 【單一模式】：維持原本的提示
+        if (saveStatusDiv) {
+            saveStatusDiv.innerText = `🌟 完美${poseNameChinese}！已記錄！`;
+            saveStatusDiv.style.color = "var(--success-color)";
+        }
+    }
+}
+
+// ==========================================
 // 2. 綁定按鈕事件與切換邏輯
 // ==========================================
 function switchPose(poseName) {
     currentPoseMode = poseName;
     canSave = true; 
     
-    // 🌟 新增這兩行：切換動作時，計時器歸零
+    // 切換動作時，計時器歸零
     perfectStartTime = 0;
     hasSavedThisRep = false;
 
-    [btnTree, btnSquat, btnRaise].forEach(btn => btn.classList.remove('active'));
+    [btnTree, btnSquat, btnRaise].forEach(btn => btn?.classList.remove('active'));
+    if(btnFlow) btnFlow.classList.remove('active');
     statusDisplay.classList.remove('error', 'perfect');
 
     if (poseName === 'tree') {
-        btnTree.classList.add('active');
+        if(btnTree) btnTree.classList.add('active');
         poseTitle.innerText = "大樹式偵測";
         treeInfo.style.display = 'block';
         squatInfo.style.display = 'none';
         genericInfo.style.display = 'none';
     } else if (poseName === 'squat') {
-        btnSquat.classList.add('active');
+        if(btnSquat) btnSquat.classList.add('active');
         poseTitle.innerText = "深蹲偵測";
         treeInfo.style.display = 'none';
         squatInfo.style.display = 'block';
         genericInfo.style.display = 'none';
     } else if (poseName === 'Raise') {
-        btnRaise.classList.add('active');
+        if(btnRaise) btnRaise.classList.add('active');
         poseTitle.innerText = "平舉偵測";
         treeInfo.style.display = 'none';
         squatInfo.style.display = 'none';
@@ -241,9 +303,30 @@ function switchPose(poseName) {
 }
 
 startBtn.addEventListener('click', startApp);
-btnTree.addEventListener('click', () => switchPose('tree'));
-btnSquat.addEventListener('click', () => switchPose('squat'));
-btnRaise.addEventListener('click', () => switchPose('Raise'));
+
+// 🌟 點擊單一動作時，要退出連續模式
+btnTree?.addEventListener('click', () => { isRoutineMode = false; switchPose('tree'); });
+btnSquat?.addEventListener('click', () => { isRoutineMode = false; switchPose('squat'); });
+btnRaise?.addEventListener('click', () => { isRoutineMode = false; switchPose('Raise'); });
+
+// 🌟 連續挑戰按鈕事件
+if (btnFlow) {
+    btnFlow.addEventListener('click', () => {
+        isRoutineMode = true;
+        currentRoutineIndex = 0; // 從第一個開始
+        isTransitioning = false;
+        
+        switchPose(yogaRoutine[currentRoutineIndex]); 
+        btnFlow.classList.add('active'); // 讓按鈕亮起
+        
+        setTimeout(() => {
+            if (saveStatusDiv) {
+                saveStatusDiv.innerText = "🧘‍♀️ 瑜珈挑戰開始！請準備第一個動作";
+                saveStatusDiv.style.color = "#f39c12";
+            }
+        }, 100);
+    });
+}
 
 // ==========================================
 // 3. 核心功能函式
@@ -267,7 +350,7 @@ function startApp() {
 }
 
 // ==========================================
-// 4. AI 偵測邏輯 (已加入 5 秒維持判斷)
+// 4. AI 偵測邏輯 (已加入換場防護與自動推進)
 // ==========================================
 function onResults(results) {
     if (loadingDiv.style.display !== 'none') {
@@ -279,6 +362,15 @@ function onResults(results) {
     canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
     if (results.poseLandmarks) {
+        
+        // 🌟 【新增】如果是換場休息時間，把骨架畫成灰色並跳過判定
+        if (isTransitioning) {
+            drawConnectors(canvasCtx, results.poseLandmarks, POSE_CONNECTIONS, {color: '#bdc3c7', lineWidth: 4});
+            drawLandmarks(canvasCtx, results.poseLandmarks, {color: '#ffffff', lineWidth: 2});
+            canvasCtx.restore();
+            return; 
+        }
+
         drawConnectors(canvasCtx, results.poseLandmarks, POSE_CONNECTIONS, {color: '#00FF00', lineWidth: 4});
         drawLandmarks(canvasCtx, results.poseLandmarks, {color: '#FF0000', lineWidth: 2});
 
@@ -290,8 +382,8 @@ function onResults(results) {
             if (shoulder && elbow && wrist && hip && knee && ankle) {
                 const elbowAngle = calculateAngle(shoulder, elbow, wrist); 
                 const shoulderAngle = calculateAngle(hip, shoulder, elbow); 
-                const kneeAngle = calculateAngle(hip, knee, ankle);       
-                const legAngle = calculateAngle(shoulder, hip, knee);     
+                const kneeAngle = calculateAngle(hip, knee, ankle);        
+                const legAngle = calculateAngle(shoulder, hip, knee);      
 
                 // === 大樹式 ===
                 if (currentPoseMode === 'tree') {
@@ -317,10 +409,9 @@ function onResults(results) {
                         legStatusDiv.innerText = "完美抬腿！"; legStatusDiv.style.color = "var(--success-color)";
                     }
 
-                    // 🌟 大樹式 5 秒判斷
                     if (isArmError || isLegError) {
                         statusDisplay.classList.add('error'); statusDisplay.classList.remove('perfect');
-                        perfectStartTime = 0; hasSavedThisRep = false; // 姿勢一歪就歸零
+                        perfectStartTime = 0; hasSavedThisRep = false; 
                     } else {
                         statusDisplay.classList.remove('error'); statusDisplay.classList.add('perfect');
                         
@@ -328,13 +419,10 @@ function onResults(results) {
                         const holdDuration = Date.now() - perfectStartTime;
 
                         if (holdDuration >= 5000) {
-                            if (!hasSavedThisRep) {
-                                saveDailyRecord('大樹式', 'Perfect');
-                                hasSavedThisRep = true;
-                            }
+                            // 🌟 替換成集中處理函數
+                            if (!hasSavedThisRep) handlePoseSuccess('大樹式');
                         } else {
                             const secondsLeft = Math.ceil((5000 - holdDuration) / 1000);
-                            // 利用 armStatusDiv 來顯示倒數
                             armStatusDiv.innerText = `PERFECT! 請維持 ${secondsLeft} 秒...`; 
                             armStatusDiv.style.color = "var(--success-color)";
                         }
@@ -357,7 +445,6 @@ function onResults(results) {
                         }
                     }
 
-                    // 🌟 深蹲 5 秒判斷
                     if (squatColor === 'var(--error-color)') {
                         squatStatusDiv.innerText = squatStatus; squatStatusDiv.style.color = squatColor;
                         statusDisplay.classList.add('error'); statusDisplay.classList.remove('perfect');
@@ -369,11 +456,8 @@ function onResults(results) {
                         const holdDuration = Date.now() - perfectStartTime;
 
                         if (holdDuration >= 5000) {
-                            if (!hasSavedThisRep) {
-                                saveDailyRecord('深蹲', 'Perfect');
-                                hasSavedThisRep = true;
-                                squatStatusDiv.innerText = "🌟 完美深蹲！已記錄！";
-                            }
+                            // 🌟 替換成集中處理函數
+                            if (!hasSavedThisRep) handlePoseSuccess('深蹲');
                         } else {
                             const secondsLeft = Math.ceil((5000 - holdDuration) / 1000);
                             squatStatusDiv.innerText = `HOLD 住了！請維持 ${secondsLeft} 秒...`;
@@ -402,7 +486,6 @@ function onResults(results) {
                         }
                     });
 
-                    // 🌟 平舉 5 秒判斷
                     if (perfectCount === rules.length) {
                         statusDisplay.classList.add('perfect'); statusDisplay.classList.remove('error');
                         
@@ -410,11 +493,8 @@ function onResults(results) {
                         const holdDuration = Date.now() - perfectStartTime;
 
                         if (holdDuration >= 5000) {
-                            if (!hasSavedThisRep) {
-                                saveDailyRecord('平舉', 'Perfect'); 
-                                hasSavedThisRep = true;
-                                poseResultsDiv.innerHTML = `<span style="color: var(--success-color); font-weight: bold;">🌟 平舉完成！已記錄！</span>`;
-                            }
+                            // 🌟 替換成集中處理函數
+                            if (!hasSavedThisRep) handlePoseSuccess('平舉');
                         } else {
                             const secondsLeft = Math.ceil((5000 - holdDuration) / 1000);
                             poseResultsDiv.innerHTML = `<span style="color: var(--success-color); font-weight: bold;">PERFECT! 請維持 ${secondsLeft} 秒...</span>`;
@@ -430,8 +510,6 @@ function onResults(results) {
     }
     canvasCtx.restore();
 }
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 
 // ==========================================
 // 5. 初始化 MediaPipe 與相機
@@ -453,17 +531,14 @@ const camera = new Camera(videoElement, {
 async function uploadScore(points) {
     if (!currentUser) return;
     
-    // 指向排行榜中該使用者的資料
     const userLeaderboardRef = doc(db, "leaderboard", currentUser.uid);
     try {
-        // 🌟 使用 increment 自動加上分數，並記錄使用者名稱
         await setDoc(userLeaderboardRef, {
             name: currentUser.displayName,
             score: increment(points),
             lastUpdate: new Date()
         }, { merge: true });
         
-        // 如果排行榜目前是打開的，就自動重新載入最新排名
         if (isLeaderboardVisible) {
             loadLeaderboard();
         }
@@ -484,7 +559,7 @@ if (toggleLeaderboardBtn) {
             leaderboardContainer.style.display = 'block';
             toggleLeaderboardBtn.innerText = '隱藏排行榜';
             toggleLeaderboardBtn.style.backgroundColor = '#ff4757';
-            loadLeaderboard(); // 打開時去雲端抓資料
+            loadLeaderboard(); 
         } else {
             leaderboardContainer.style.display = 'none';
             toggleLeaderboardBtn.innerText = '🏆 查看全球排行榜';
@@ -496,7 +571,6 @@ if (toggleLeaderboardBtn) {
 // 讀取前 10 名資料
 async function loadLeaderboard() {
     const leaderboardCol = collection(db, "leaderboard");
-    // 依據 score 分數由高到低 (desc) 排列，取前 10 名
     const q = query(leaderboardCol, orderBy("score", "desc"), limit(10));
     
     try {
@@ -504,12 +578,11 @@ async function loadLeaderboard() {
         const listElement = document.getElementById("leaderboard-list");
         if (!listElement) return;
         
-        listElement.innerHTML = ""; // 清空舊畫面
+        listElement.innerHTML = ""; 
         let rank = 1;
         
         querySnapshot.forEach((doc) => {
             const data = doc.data();
-            // 設定前三名圖示
             let medal = rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : `🏅 ${rank}.`;
             
             const li = document.createElement("li");
