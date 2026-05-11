@@ -102,35 +102,6 @@ if(logoutBtn) {
     });
 }
 
-// ==========================================
-// 自動存檔防呆與歷史紀錄
-// ==========================================
-// async function saveDailyRecord(poseType, status) {
-//     if (!currentUser || !canSave) return;
-//     canSave = false; 
-
-//     const today = new Date().toLocaleDateString('zh-TW').replace(/\//g, '-');
-//     const userRef = doc(db, "users", currentUser.uid, "history", today);
-//     try {
-//         await setDoc(userRef, {
-//             date: today,
-//             lastPose: poseType,
-//             status: status,
-//             timestamp: new Date()
-//         }, { merge: true });
-        
-//         if(saveStatusDiv) saveStatusDiv.innerText = `✅ ${poseType} 已自動存檔 (${new Date().toLocaleTimeString()})`;
-        
-//         loadHistoryData(); 
-
-//         setTimeout(() => { 
-//             canSave = true; 
-//             if(saveStatusDiv) saveStatusDiv.innerText = ''; 
-//         }, 5000); 
-
-//     } catch (e) { console.error("雲端存檔失敗", e); }
-// }
-
 async function saveDailyRecord(poseType, status) {
     if (!currentUser || !canSave) return;
     canSave = false; 
