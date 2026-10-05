@@ -31,6 +31,13 @@ const homeView = document.getElementById('home-view');
 const workoutView = document.getElementById('workout-view');
 const actionsGrid = document.getElementById('actions-grid');
 const btnBackHome = document.getElementById('btn-back-home');
+
+// --- 🌟 新增：左側控制區元素 ---
+const quickSwitchSelect = document.getElementById('quick-switch-select');
+const btnTutorial = document.getElementById('btn-tutorial');
+const tutorialVideoContainer = document.getElementById('tutorial-video-container');
+const tutorialVideo = document.getElementById('tutorial-video');
+// --------------------------------
 const currentWorkoutTitle = document.getElementById('current-workout-title');
 
 const videoElement = document.getElementById('video');
@@ -212,7 +219,13 @@ function enterWorkout(poseId) {
     if (currentWorkoutTitle && poseItem) {
         currentWorkoutTitle.innerText = `${poseItem.title} 練習室`;
     }
-    
+
+    // 🌟   新增：進入練習室時，讓左側下拉選單切換到正確的動作
+    if (quickSwitchSelect) {
+        // 確保大小寫能對應到 id (因 HTML option value 是 raise，JS 設的是 Raise)
+        quickSwitchSelect.value = (poseId === 'Raise') ? 'raise' : poseId;
+    }    
+
     if (!cameraActive) {
         camera.start();
         cameraActive = true;
@@ -229,13 +242,68 @@ btnBackHome?.addEventListener('click', () => {
         camera.stop();
         cameraActive = false;
     }
-    
+
+    // 新增：返回首頁時，強制關閉並暫停教學影片
+    if (tutorialVideoContainer) {
+        tutorialVideoContainer.classList.add('hidden-container');
+        tutorialVideo.pause();
+    }    
+
     perfectStartTime = 0;
     hasSavedThisRep = false;
 });
+// ==========================================
+// 8.左側控制面板功能：下拉快速切換 & 教學影片
+// ==========================================
+
+// 1. 監聽下拉式選單的切換
+quickSwitchSelect?.addEventListener('change', (e) => {
+    // 處理 HTML (raise) 與資料庫 (Raise) 大小寫的差異
+    const selectedValue = e.target.value;
+    const poseId = (selectedValue === 'raise') ? 'Raise' : selectedValue;
+    
+    // 更新上方的標題
+    const poseItem = POSE_DATABASE.find(p => p.id === poseId);
+    if (currentWorkoutTitle && poseItem) {
+        currentWorkoutTitle.innerText = `${poseItem.title} 練習室`;
+    }
+    
+    // 如果教學影片正在播，切換動作時自動關閉
+    if (tutorialVideoContainer) {
+        tutorialVideoContainer.classList.add('hidden-container');
+        tutorialVideo.pause();
+    }
+    
+    // 重新呼叫倒數 3 秒的引導畫面，並進行切換
+    openPoseIntro(poseId);
+});
+
+// 2. 監聽「教學」按鈕的點擊
+btnTutorial?.addEventListener('click', () => {
+    if (!tutorialVideoContainer || !tutorialVideo) return;
+    
+    // 檢查目前影片區塊是隱藏還是顯示狀態
+    const isHidden = tutorialVideoContainer.classList.contains('hidden-container');
+    
+    if (isHidden) {
+        // 從資料庫找出目前的動作，並取得你設定的影片網址
+        const currentObj = POSE_DATABASE.find(p => p.id === currentPoseMode);
+        if (currentObj && currentObj.videoUrl) {
+            tutorialVideo.src = currentObj.videoUrl;
+        }
+        
+        // 顯示影片並自動播放
+        tutorialVideoContainer.classList.remove('hidden-container');
+        tutorialVideo.play();
+    } else {
+        // 如果原本已經是開啟狀態，再次點擊就會隱藏並暫停影片
+        tutorialVideoContainer.classList.add('hidden-container');
+        tutorialVideo.pause();
+    }
+});
 
 // ==========================================
-// 8. 彈窗與 3 秒倒數計時
+// 9. 彈窗與 3 秒倒數計時
 // ==========================================
 function openPoseIntro(poseKey) {
     const guide = POSE_DATABASE.find(p => p.id === poseKey);
@@ -314,7 +382,7 @@ function switchPose(poseName) {
 }
 
 // ==========================================
-// 9. 幾何運算與語音提示
+// 10. 幾何運算與語音提示
 // ==========================================
 function calculateAngle(a, b, c) {
     let radians = Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(a.y - b.y, a.x - b.x);
@@ -335,7 +403,7 @@ function speakHint(text, cooldown = 3000) {
 }
 
 // ==========================================
-// 🌟 10. AI 偵測主邏輯
+// 11. AI 偵測主邏輯
 // ==========================================
 function onResults(results) {
     if (loadingDiv && loadingDiv.style.display !== 'none') {
@@ -541,7 +609,7 @@ function handlePoseSuccess(poseNameChinese) {
 }
 
 // ==========================================
-// 11. 初始化 MediaPipe
+// 12. 初始化 MediaPipe
 // ==========================================
 const pose = new Pose({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`});
 pose.setOptions({ modelComplexity: 1, smoothLandmarks: true, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
@@ -553,7 +621,7 @@ const camera = new Camera(videoElement, {
 });
 
 // ==========================================
-// 🌟 12. 資料庫儲存與查詢核心
+// 13. 資料庫儲存與查詢核心
 // ==========================================
 async function saveDailyRecord(poseType, status) {
     if (!currentUser || !canSave) return;
@@ -583,7 +651,7 @@ function closeAllPanels() {
 }
 
 // ==========================================
-// 🌟 13. 個人中心資料讀取（修復段位與圓餅圖）
+// 14. 個人中心資料讀取（修復段位與圓餅圖）
 // ==========================================
 async function loadProfileData() {
     if (!currentUser) return;
@@ -696,7 +764,7 @@ function drawPreferenceChart(dataPoints) {
 }
 
 // ==========================================
-// 🌟 14. 歷史紀錄與排行榜資料讀取
+// 15. 歷史紀錄與排行榜資料讀取
 // ==========================================
 async function loadHistoryData() {
     if (!currentUser) return;
