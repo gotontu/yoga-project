@@ -179,12 +179,7 @@ display: flex !important;
     align-items: flex-start !important;
     padding: 30px !important; 
     gap: 80px !important; /* 增加左側選單與中央鏡頭的間距，讓畫面不擁擠 */
-    box-sizing: border-box;
-}
-
-/* 隱藏偵測標題 */
-#pose-title {
-    display: none !important;
+    /* box-sizing: border-box; */
 }
 
 /* 2. 左側控制面板 */
