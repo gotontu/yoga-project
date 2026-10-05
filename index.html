@@ -95,43 +95,67 @@
 
     <!-- 3. 訓練偵測室 (Workout View) -->
     <div id="workout-view" style="display: none;">
-        <div class="workout-header">
+        
+        <!-- 左側控制面板 -->
+        <div class="left-control-panel">
             <button id="btn-back-home" class="back-home-btn">⬅️ 返回動作選單</button>
-            <h2 id="current-workout-title">動作練習室</h2>
-            <div style="width: 140px;"></div>
+            
+            <div class="quick-switch-container">
+                <div class="dropdown-wrapper">
+                    <span class="search-icon">🔍</span>
+                    <select id="quick-switch-select" class="quick-switch-dropdown">
+                        <option value="tree">大樹式</option>
+                        <option value="squat">深蹲</option>
+                        <option value="raise">平舉</option>
+                    </select>
+                </div>
+                <button id="btn-tutorial" class="tutorial-btn">教學</button>
+            </div>
+
+            <!-- 教學影片區塊 -->
+            <div id="tutorial-video-container" class="hidden-container">
+                <video id="tutorial-video" width="100%" controls playsinline></video>
+            </div>
         </div>
 
-        <div id="video-container">
-            <div id="loading">啟動鏡頭與 AI 模型中...</div>
-            <video id="video" width="640" height="480" autoplay playsinline muted></video>
-            <canvas id="canvas" width="640" height="480"></canvas>
+        <!-- 鏡頭與提示詞區域 (置中主畫面) -->
+        <div class="main-workout-area">
+            <h2 id="current-workout-title">動作練習室</h2>
+            
+            <div id="video-container">
+                <div id="loading">啟動鏡頭與 AI 模型中...</div>
+                <video id="video" width="640" height="480" autoplay playsinline muted></video>
+                <canvas id="canvas" width="640" height="480"></canvas>
+            </div>
 
-            <div id="status-display">
-                <div id="pose-title">動作偵測中</div>
+            <!-- 鏡頭下方的提示詞 -->
+            <div id="status-display" class="bottom-status-display">
+                <div id="pose-title" class="status-heading">動作偵測中</div>
                 
-                <div id="tree-info">
-                    <div class="status-title">手部狀態：</div>
-                    <div id="arm-status" class="status-value">等待姿勢...</div>
-                    <div class="status-title">腿部狀態：</div>
-                    <div id="leg-status" class="status-value">等待姿勢...</div>
+                <div id="tree-info" class="status-content">
+                    <span class="status-title">手部狀態：</span>
+                    <span id="arm-status" class="status-value">等待姿勢...</span>
+                    <br>
+                    <span class="status-title">腿部狀態：</span>
+                    <span id="leg-status" class="status-value">等待姿勢...</span>
                 </div>
                 
-                <div id="squat-info" style="display: none;">
-                    <div class="status-title">身體狀態：</div>
-                    <div id="squat-status" class="status-value">請開始深蹲</div>
+                <div id="squat-info" class="status-content hidden-container">
+                    <span class="status-title">身體狀態：</span>
+                    <span id="squat-status" class="status-value">請開始深蹲</span>
                 </div>
 
-                <div id="generic-info" style="display: none;">
-                    <div class="status-title">動作提示：</div>
-                    <div id="pose-results" class="status-value">等待偵測...</div>
+                <div id="generic-info" class="status-content hidden-container">
+                    <span class="status-title">動作提示：</span>
+                    <span id="pose-results" class="status-value">等待偵測...</span>
                 </div>
 
-                <div id="save-status"></div>
+                <div id="save-status" class="save-status-text"></div>
             </div>
         </div>
     </div>
 
-    <!-- 教學引導彈窗 -->
+    <!-- 教學引導彈窗 (如果是從主選單進入前的彈窗，維持原樣) -->
     <div id="intro-modal" class="modal-overlay" style="display: none;">
         <div class="modal-card">
             <h2 id="intro-title">動作名稱</h2>
