@@ -167,26 +167,23 @@ body {
 .history-list, .leaderboard-list { list-style: none; padding: 0; margin: 0; max-height: 240px; overflow-y: auto; }
 .history-list li, .leaderboard-list li { padding: 10px 0; border-bottom: 1px solid #eee; }
 
-/* ==========================================
-   覆蓋修復版：訓練偵測室 (強制版面歸位)
-========================================== */
-
-/* 1. 整個練習室改為左右並排 */
+/* 訓練偵測室 */
 #workout-view {
-    display: flex !important;
-    flex-direction: row !important; /* 強制左右排列 */
-    justify-content: center !important;
-    align-items: flex-start !important;
-    padding: 30px !important;
-    gap: 40px !important; /* 左側面板與中央畫面的間距 */
+    display: flex;
+    justify-content: center; /* 讓整個內容置中 */
+    align-items: flex-start;
+    min-height: 100vh;
+    padding: 30px;
+    gap: 40px; /* 左側面板與中央畫面的間距 */
 }
 
-/* 2. 左側控制面板 */
+/* --- 左側控制面板 --- */
 .left-control-panel {
-    width: 280px;
+    width: 250px;
     display: flex;
     flex-direction: column;
     gap: 15px;
+    margin-top: 10px;
 }
 
 .back-home-btn {
@@ -195,22 +192,21 @@ body {
 }
 .back-home-btn:hover { background: #747d8c; }
 
-/* 3. 下拉選單與教學按鈕並排 */
+/* 下拉選單與教學按鈕 */
 .quick-switch-container {
     display: flex;
     align-items: center;
     gap: 10px;
-    width: 100%;
 }
 
 .dropdown-wrapper {
     display: flex;
     align-items: center;
     background: rgba(255, 255, 255, 0.95); 
-    padding: 10px 18px;
-    border-radius: 30px;
+    padding: 10px 18px; 
+    border-radius: 30px; 
     flex-grow: 1;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15); 
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15); /* 淡淡的陰影增加立體感 */
 }
 
 .search-icon { 
@@ -218,7 +214,7 @@ body {
     font-size: 1.1rem;
 }
 
-/* 下拉選單文字 */
+/* 2. 下拉選單文字 */
 .quick-switch-dropdown {
     border: none;
     outline: none;
@@ -231,7 +227,7 @@ body {
     cursor: pointer;
 }
 
-/* 教學按鈕 */
+/* 3. 教學按鈕 */
 .tutorial-btn {
     padding: 10px 24px;
     background: linear-gradient(45deg, var(--secondary-color), var(--primary-color));
@@ -246,40 +242,46 @@ body {
     white-space: nowrap;
 }
 
+/* 增加滑鼠懸停的互動感 */
 .tutorial-btn:hover { 
     transform: translateY(-2px);
     box-shadow: 0 6px 15px rgba(0, 242, 254, 0.4);
 }
 
-/* 4. 教學影片區塊
-#tutorial-video-container {
-    width: 100%;
-    border-radius: 10px;
-    overflow: hidden;
-    background: #000;
-} */
-
-/* 5. 中央鏡頭區塊 */
+/* --- 中央鏡頭與提示區 --- */
 .main-workout-area {
     display: flex;
     flex-direction: column;
     align-items: center;
 }
 
-/* 6. 強制解除提示詞的浮動，讓它回到鏡頭正下方 */
-#status-display {
-    position: static !important; /* 關閉原本的 absolute 浮動 */
-    margin: 25px auto 0 auto !important;
-    text-align: center !important;
-    background-color: var(--panel-color) !important;
-    padding: 25px !important;
-    border-radius: 12px !important;
-    color: white !important;
-    width: 640px !important;
-    border: none !important; /* 移除舊有的邊線 */
-    border-top: 5px solid #57606f !important;
-    box-sizing: border-box;
+#current-workout-title {
+    font-size: 1.8rem;
+    margin: 0 0 15px 0;
+    color: #f1f2f6;
 }
+
+#video-container {
+    position: relative; width: 640px; height: 480px; border-radius: 15px;
+    overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); background: #000;
+}
+#video { display: none; }
+#canvas { width: 100%; height: 100%; transform: scaleX(-1); }
+
+/* 下方放大的提示詞 */
+.bottom-status-display {
+    margin-top: 25px;
+    text-align: center;
+    background-color: var(--panel-color);
+    padding: 25px;
+    border-radius: 12px;
+    color: white;
+    width: 640px;
+    box-sizing: border-box;
+    border-top: 5px solid #57606f;
+}
+.bottom-status-display.perfect { border-color: var(--success-color); }
+.bottom-status-display.error { border-color: var(--error-color); }
 
 .status-heading {
     font-size: 2rem;
@@ -292,3 +294,40 @@ body {
     font-size: 1.4rem;
     line-height: 1.6;
 }
+
+.status-title { color: #a4b0be; }
+.status-value { font-weight: bold; }
+
+.save-status-text {
+    margin-top: 15px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--success-color);
+}
+
+#loading {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8);
+    display: flex; justify-content: center; align-items: center; font-size: 20px; z-index: 10;
+}
+
+.hidden-container { display: none !important; }
+
+/* 彈窗樣式 */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.8); backdrop-filter: blur(5px);
+    display: flex; justify-content: center; align-items: center; z-index: 999;
+}
+.modal-card {
+    background: var(--panel-color); border-radius: 20px; padding: 25px 30px;
+    width: 90%; max-width: 480px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+}
+#intro-media-wrapper {
+    width: 100%; height: 260px; border-radius: 12px; overflow: hidden;
+    background: #000; margin: 15px 0; display: flex; align-items: center; justify-content: center;
+}
+#intro-media-wrapper img, #intro-media-wrapper video { width: 100%; height: 100%; object-fit: cover; }
+.intro-tips-list { text-align: left; background: rgba(0,0,0,0.25); border-radius: 10px; padding: 12px 15px 12px 30px; color: #ced6e0; font-size: 0.85rem; line-height: 1.6; }
+
+.countdown-bounce { font-size: 9rem; font-weight: 900; color: var(--primary-color); animation: bounce 1s infinite; }
+@keyframes bounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
