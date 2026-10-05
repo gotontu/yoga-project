@@ -301,7 +301,6 @@ function handlePoseSuccess(poseNameChinese) {
     } else {
         if (saveStatusDiv) {
             saveStatusDiv.innerText = `🌟 完美${poseNameChinese}！已記錄！`;
-            saveStatusDiv.style.color = "var(--success-color)";
         }
     }
 }
@@ -310,7 +309,6 @@ function showSummaryScreen() {
     if (!summaryScreen) return;
     const timeDiffMs = Date.now() - routineStartTime;
     const minutes = Math.max(1, Math.floor(timeDiffMs / 60000));
-    const calories = Math.max(1, (minutes * 3) + (yogaRoutine.length * 5)); 
 
     const actElem = document.getElementById('summary-actions');
     const timeElem = document.getElementById('summary-time');
@@ -466,7 +464,6 @@ if (btnFlow) {
         setTimeout(() => {
             if (saveStatusDiv) {
                 saveStatusDiv.innerText = "🧘‍♀️ 瑜珈挑戰開始！請準備第一個動作";
-                saveStatusDiv.style.color = "#f39c12";
             }
         }, 100);
     });
@@ -510,7 +507,7 @@ function speakHint(text, cooldown = 3000) {
 }
 
 // ==========================================
-// 🌟 10. AI 偵測邏輯（徹底修正大樹式）
+// 🌟 10. AI 偵測邏輯（配合大字幕優化樣式）
 // ==========================================
 function onResults(results) {
     if (loadingDiv && loadingDiv.style.display !== 'none') {
@@ -574,25 +571,20 @@ function onResults(results) {
                         // 右腳曲膝抬起 -> 左腳必須伸直支撐
                         if (leftKneeAngle < 150) {
                             legStatusDiv.innerText = "錯誤：支撐腳（左腳）請伸直！";
-                            legStatusDiv.style.color = "var(--error-color)";
                             isLegError = true;
                         } else {
-                            legStatusDiv.innerText = "腿部 PERFECT！(左腳站穩，右腳抬起)";
-                            legStatusDiv.style.color = "var(--success-color)";
+                            legStatusDiv.innerText = "腿部 PERFECT！";
                         }
                     } else if (isLeftLegLifted) {
                         // 左腳曲膝抬起 -> 右腳必須伸直支撐
                         if (rightKneeAngle < 150) {
                             legStatusDiv.innerText = "錯誤：支撐腳（右腳）請伸直！";
-                            legStatusDiv.style.color = "var(--error-color)";
                             isLegError = true;
                         } else {
-                            legStatusDiv.innerText = "腿部 PERFECT！(右腳站穩，左腳抬起)";
-                            legStatusDiv.style.color = "var(--success-color)";
+                            legStatusDiv.innerText = "腿部 PERFECT！";
                         }
                     } else {
                         legStatusDiv.innerText = "請單腳站穩，另一腳曲膝抬高貼於腿側";
-                        legStatusDiv.style.color = "var(--error-color)";
                         isLegError = true;
                     }
 
@@ -610,18 +602,14 @@ function onResults(results) {
                     if (isOverhead) {
                         if (leftElbowAngle < 125 || rightElbowAngle < 125) {
                             armStatusDiv.innerText = "錯誤：雙手高舉時請盡量打直手肘！";
-                            armStatusDiv.style.color = "var(--error-color)";
                             isArmError = true;
                         } else {
                             armStatusDiv.innerText = "手臂 PERFECT！(高舉伸展)";
-                            armStatusDiv.style.color = "var(--success-color)";
                         }
                     } else if (isPraying) {
                         armStatusDiv.innerText = "手臂 PERFECT！(胸前合十)";
-                        armStatusDiv.style.color = "var(--success-color)";
                     } else {
                         armStatusDiv.innerText = "手部請向上舉過頭頂，或於胸前合十";
-                        armStatusDiv.style.color = "var(--error-color)";
                         isArmError = true;
                     }
 
@@ -643,7 +631,7 @@ function onResults(results) {
                         } else {
                             const secondsLeft = Math.ceil((5000 - holdDuration) / 1000);
                             armStatusDiv.innerText = `PERFECT! 請維持平衡 ${secondsLeft} 秒...`;
-                            armStatusDiv.style.color = "var(--success-color)";
+                            legStatusDiv.innerText = "";
                         }
                     }
 
@@ -655,32 +643,31 @@ function onResults(results) {
                     const squatKneeAngle = calculateAngle(hipR, kneeR, ankleR);    
                     
                     let squatStatus = "請開始深蹲";
-                    let squatColor = "white";
+                    let isSquatError = false;
+                    let isSquatPerfect = false;
 
                     if (squatKneeAngle < 140) {
                         if (squatKneeAngle > 110) {
                             squatStatus = "再蹲低一點！";
-                            squatColor = "yellow"; 
                             speakHint("再蹲低一點"); 
                         } else if (squatHipAngle > 120) {
                             squatStatus = "錯誤：屁股要翹高，身體不要太直！";
-                            squatColor = "var(--error-color)";
+                            isSquatError = true;
                             speakHint("屁股要翹高，身體不要太直"); 
                         } else {
                             squatStatus = "標準深蹲！繼續保持！";
-                            squatColor = "var(--success-color)";
+                            isSquatPerfect = true;
                             speakHint("標準深蹲！繼續保持！"); 
                         }
                     }
 
-                    if (squatColor === 'var(--error-color)') {
+                    if (isSquatError) {
                         squatStatusDiv.innerText = squatStatus;
-                        squatStatusDiv.style.color = squatColor;
                         statusDisplay.classList.add('error');
                         statusDisplay.classList.remove('perfect');
                         perfectStartTime = 0;
                         hasSavedThisRep = false;
-                    } else if (squatColor === 'var(--success-color)') {
+                    } else if (isSquatPerfect) {
                         statusDisplay.classList.remove('error');
                         statusDisplay.classList.add('perfect');
                         
@@ -692,11 +679,9 @@ function onResults(results) {
                         } else {
                             const secondsLeft = Math.ceil((5000 - holdDuration) / 1000);
                             squatStatusDiv.innerText = `HOLD 住了！請維持 ${secondsLeft} 秒...`;
-                            squatStatusDiv.style.color = squatColor;
                         }
                     } else {
                         squatStatusDiv.innerText = squatStatus;
-                        squatStatusDiv.style.color = squatColor;
                         statusDisplay.classList.remove('error', 'perfect');
                         perfectStartTime = 0;
                         hasSavedThisRep = false;
@@ -733,11 +718,11 @@ function onResults(results) {
                             speakHint("平舉完成，太棒了！", 1000);
                         } else {
                             const secondsLeft = Math.ceil((5000 - holdDuration) / 1000);
-                            poseResultsDiv.innerHTML = `<span style="color: var(--success-color); font-weight: bold;">PERFECT! 請維持 ${secondsLeft} 秒...</span>`;
+                            poseResultsDiv.innerText = `PERFECT! 請維持 ${secondsLeft} 秒...`;
                             speakHint("平舉姿勢完美，請撐住"); 
                         }
                     } else {
-                        poseResultsDiv.innerHTML = errors.map(e => `<div style="color: var(--error-color); margin-bottom: 5px;">${e}</div>`).join('');
+                        poseResultsDiv.innerHTML = errors.join(' / ');
                         statusDisplay.classList.add('error');
                         statusDisplay.classList.remove('perfect');
                         perfectStartTime = 0;
@@ -763,7 +748,8 @@ pose.onResults(onResults);
 
 const camera = new Camera(videoElement, {
     onFrame: async () => { await pose.send({image: videoElement}); },
-    width: 640, height: 480
+    // 🌟 解析度調整：升級為 720p 以配合大鏡頭畫面
+    width: 1280, height: 720
 });
 
 // ==========================================
