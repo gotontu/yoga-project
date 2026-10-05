@@ -64,6 +64,17 @@ const introDesc = document.getElementById('intro-desc');
 const introTips = document.getElementById('intro-tips');
 const introStartBtn = document.getElementById('intro-start-btn');
 
+// 上方抽屜面板元素
+const btnProfile = document.getElementById('btn-profile');
+const profileContainer = document.getElementById('profile-container');
+const toggleHistoryBtn = document.getElementById('toggle-history-btn');
+const historyContainer = document.getElementById('history-container');
+const toggleLeaderboardBtn = document.getElementById('toggle-leaderboard-btn');
+const leaderboardContainer = document.getElementById('leaderboard-container');
+
+let myChart = null;
+let preferenceChart = null;
+
 // ==========================================
 // 🌟 4. 原本的三個動作資料庫
 // ==========================================
@@ -126,13 +137,13 @@ let pendingPose = null;
 let cameraActive = false;
 
 // ==========================================
-// 🌟 6. Firebase 身份驗證邏輯 (修復登入與開始體驗流程)
+// 🌟 6. Firebase 身份驗證邏輯
 // ==========================================
 onAuthStateChanged(auth, (user) => {
     if (user) {
         currentUser = user;
         if (loginBtn) loginBtn.style.display = 'none';
-        if (startBtn) startBtn.style.display = 'block'; // 顯示「開始體驗」按鈕
+        if (startBtn) startBtn.style.display = 'block';
         if (userWelcome) userWelcome.innerText = `準備好了嗎，${user.displayName || '瑜珈夥伴'}？`;
         if (userDisplay) userDisplay.innerText = `使用者：${user.displayName || '已登入'}`;
     } else {
@@ -147,22 +158,19 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-// 登入按鈕點擊
 loginBtn?.addEventListener('click', () => {
     signInWithPopup(auth, provider).catch(err => {
         console.error("登入失敗", err);
-        alert("登入失敗：" + (err.message || "請檢查網路連線或 Firebase 網域白名單"));
+        alert("登入失敗：" + (err.message || "請檢查網路連線"));
     });
 });
 
-// 點擊「開始體驗」按鈕：進入首頁大廳
 startBtn?.addEventListener('click', () => {
     if (landingPage) landingPage.style.display = 'none';
     if (homeView) homeView.style.display = 'flex';
     renderActionGrid();
 });
 
-// 登出按鈕點擊
 logoutBtn?.addEventListener('click', () => {
     signOut(auth);
 });
@@ -195,7 +203,6 @@ function renderActionGrid() {
     });
 }
 
-// 點擊卡片：進入偵測室、開啟相機、跳出介紹彈窗
 function enterWorkout(poseId) {
     closeAllPanels();
     if (homeView) homeView.style.display = 'none';
@@ -214,7 +221,6 @@ function enterWorkout(poseId) {
     openPoseIntro(poseId);
 }
 
-// 點擊返回：關閉訓練室與相機，回到首頁大廳
 btnBackHome?.addEventListener('click', () => {
     if (workoutView) workoutView.style.display = 'none';
     if (homeView) homeView.style.display = 'flex';
@@ -329,7 +335,7 @@ function speakHint(text, cooldown = 3000) {
 }
 
 // ==========================================
-// 🌟 10. AI 偵測主邏輯 (修正後大樹式、深蹲、平舉)
+// 🌟 10. AI 偵測主邏輯
 // ==========================================
 function onResults(results) {
     if (loadingDiv && loadingDiv.style.display !== 'none') {
@@ -367,7 +373,7 @@ function onResults(results) {
 
             if (shoulderL && shoulderR && hipL && hipR && kneeL && kneeR && ankleL && ankleR) {
 
-                // === 🌟 大樹式 ===
+                // === 大樹式 ===
                 if (currentPoseMode === 'tree') {
                     let isArmError = false;
                     let isLegError = false;
@@ -440,7 +446,7 @@ function onResults(results) {
                         }
                     }
 
-                // === 🌟 深蹲 ===
+                // === 深蹲 ===
                 } else if (currentPoseMode === 'squat') {
                     const squatHipAngle = calculateAngle(shoulderR, hipR, kneeR);   
                     const squatKneeAngle = calculateAngle(hipR, kneeR, ankleR);    
@@ -481,7 +487,7 @@ function onResults(results) {
                         perfectStartTime = 0;
                     }
 
-                // === 🌟 側平舉 ===
+                // === 側平舉 ===
                 } else if (currentPoseMode === 'Raise') {
                     const rules = YOGA_DATABASE[currentPoseMode];
                     let perfectCount = 0;
@@ -524,7 +530,6 @@ function onResults(results) {
     canvasCtx.restore();
 }
 
-// 成功儲存
 function handlePoseSuccess(poseNameChinese) {
     saveDailyRecord(poseNameChinese, 'Perfect'); 
     hasSavedThisRep = true;
@@ -548,7 +553,7 @@ const camera = new Camera(videoElement, {
 });
 
 // ==========================================
-// 12. 資料庫儲存與導覽列抽屜管理
+// 🌟 12. 資料庫儲存與查詢核心
 // ==========================================
 async function saveDailyRecord(poseType, status) {
     if (!currentUser || !canSave) return;
@@ -570,39 +575,243 @@ async function uploadScore(points) {
     } catch (e) {}
 }
 
-const btnProfile = document.getElementById('btn-profile');
-const profileContainer = document.getElementById('profile-container');
-const toggleHistoryBtn = document.getElementById('toggle-history-btn');
-const historyContainer = document.getElementById('history-container');
-const toggleLeaderboardBtn = document.getElementById('toggle-leaderboard-btn');
-const leaderboardContainer = document.getElementById('leaderboard-container');
-
+// 關閉所有抽屜面板
 function closeAllPanels() {
     if(profileContainer) profileContainer.style.display = 'none';
     if(historyContainer) historyContainer.style.display = 'none';
     if(leaderboardContainer) leaderboardContainer.style.display = 'none';
 }
 
+// ==========================================
+// 🌟 13. 個人中心資料讀取（修復段位與圓餅圖）
+// ==========================================
+async function loadProfileData() {
+    if (!currentUser) return;
+
+    const nameEl = document.getElementById('profile-name');
+    const avatarEl = document.getElementById('profile-avatar');
+    const rankEl = document.getElementById('profile-rank');
+    const totalScoreEl = document.getElementById('profile-total-score');
+    const daysCountEl = document.getElementById('profile-days-count');
+    const perfectCountEl = document.getElementById('profile-perfect-count');
+
+    if (nameEl) nameEl.innerText = currentUser.displayName || '瑜珈夥伴';
+    if (avatarEl) avatarEl.src = currentUser.photoURL || 'https://via.placeholder.com/80?text=User';
+
+    // 1. 讀取總積分與段位
+    try {
+        const userLeaderboardRef = doc(db, "leaderboard", currentUser.uid);
+        const docSnap = await getDoc(userLeaderboardRef);
+        let currentScore = 0;
+        if (docSnap.exists()) {
+            currentScore = docSnap.data().score || 0;
+        }
+        if (totalScoreEl) totalScoreEl.innerText = currentScore;
+
+        if (rankEl) {
+            if (currentScore < 50) {
+                rankEl.innerText = "🌱 瑜珈新手";
+                rankEl.style.background = "#bdc3c7";
+                rankEl.style.color = "#2f3542";
+            } else if (currentScore < 200) {
+                rankEl.innerText = "🧘‍♂️ 瑜珈學徒";
+                rankEl.style.background = "#3498db";
+                rankEl.style.color = "white";
+            } else if (currentScore < 500) {
+                rankEl.innerText = "🔥 瑜珈達人";
+                rankEl.style.background = "#e67e22";
+                rankEl.style.color = "white";
+            } else {
+                rankEl.innerText = "👑 瑜珈大師";
+                rankEl.style.background = "#f1c40f";
+                rankEl.style.color = "#c0392b";
+            }
+        }
+    } catch (e) {
+        console.error("讀取個人積分失敗", e);
+        if (rankEl) rankEl.innerText = "🌱 瑜珈新手";
+    }
+
+    // 2. 讀取練習天數、Perfect次數、動作偏好圓餅圖
+    try {
+        const historyRef = collection(db, "users", currentUser.uid, "history");
+        const querySnapshot = await getDocs(historyRef);
+        let uniqueDates = new Set();
+        let poseCounts = { '大樹式': 0, '深蹲': 0, '平舉': 0 };
+
+        if (perfectCountEl) perfectCountEl.innerText = querySnapshot.size;
+
+        querySnapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            if (data.date) uniqueDates.add(data.date);
+            const p = data.lastPose;
+            if (poseCounts[p] !== undefined) {
+                poseCounts[p]++;
+            } else if (p === '側平舉') {
+                poseCounts['平舉']++;
+            }
+        });
+
+        if (daysCountEl) daysCountEl.innerText = uniqueDates.size;
+        drawPreferenceChart([poseCounts['大樹式'], poseCounts['深蹲'], poseCounts['平舉']]);
+
+    } catch (e) {
+        console.error("讀取歷史分析失敗", e);
+    }
+}
+
+function drawPreferenceChart(dataPoints) {
+    const chartElem = document.getElementById('posePreferenceChart');
+    if (!chartElem) return;
+    const ctx = chartElem.getContext('2d');
+    if (preferenceChart) { preferenceChart.destroy(); }
+
+    const isDataEmpty = dataPoints.every(val => val === 0);
+    const renderData = isDataEmpty ? [1, 1, 1] : dataPoints;
+    const bgColors = isDataEmpty 
+        ? ['#ecf0f1', '#ecf0f1', '#ecf0f1'] 
+        : ['#1abc9c', '#9b59b6', '#f39c12'];
+
+    preferenceChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['大樹式', '深蹲', '側平舉'],
+            datasets: [{
+                data: renderData,
+                backgroundColor: bgColors,
+                borderWidth: 2,
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 12 } } },
+                tooltip: { enabled: !isDataEmpty }
+            },
+            cutout: '60%'
+        }
+    });
+}
+
+// ==========================================
+// 🌟 14. 歷史紀錄與排行榜資料讀取
+// ==========================================
+async function loadHistoryData() {
+    if (!currentUser) return;
+    const historyRef = collection(db, "users", currentUser.uid, "history");
+    const q = query(historyRef, orderBy("timestamp", "desc"), limit(7));
+
+    try {
+        const querySnapshot = await getDocs(q);
+        const dates = [];
+        const scores = [];
+        const listItems = [];
+
+        querySnapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            dates.push(data.date);
+            scores.push(data.status === 'Perfect' ? 100 : 50);
+
+            let timeString = "";
+            if (data.timestamp) {
+                const dateObj = data.timestamp.toDate ? data.timestamp.toDate() : new Date(data.timestamp);
+                timeString = dateObj.toLocaleTimeString('zh-TW', { hour12: false });
+            }
+
+            listItems.push(`<li>
+                📅 ${data.date} 
+                <span style="color: #747d8c; font-size: 0.85em; margin: 0 5px;">[${timeString}]</span> 
+                - ${data.lastPose}: <strong style="color: var(--success-color);">${data.status}</strong>
+            </li>`);
+        });
+
+        renderHistoryChart(dates.reverse(), scores.reverse());
+        const listContainer = document.getElementById('history-list');
+        if (listContainer) {
+            listContainer.innerHTML = listItems.length > 0 ? listItems.join('') : '<li style="color: #999;">尚無練習紀錄</li>';
+        }
+    } catch (e) {
+        console.error("讀取紀錄失敗", e);
+    }
+}
+
+function renderHistoryChart(labels, dataPoints) {
+    const chartElem = document.getElementById('historyChart');
+    if (!chartElem) return;
+    const ctx = chartElem.getContext('2d');
+    if (myChart) { myChart.destroy(); }
+    myChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: '練習品質 (100=完美)',
+                data: dataPoints,
+                borderColor: '#4e73df',
+                backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                tension: 0.3,
+                fill: true
+            }]
+        },
+        options: { scales: { y: { min: 0, max: 100 } } }
+    });
+}
+
+async function loadLeaderboardData() {
+    const leaderboardCol = collection(db, "leaderboard");
+    const q = query(leaderboardCol, orderBy("score", "desc"), limit(10));
+
+    try {
+        const querySnapshot = await getDocs(q);
+        const listElement = document.getElementById("leaderboard-list");
+        if (!listElement) return;
+
+        listElement.innerHTML = "";
+        let rank = 1;
+
+        querySnapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            let medal = rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : `🏅 ${rank}.`;
+            const li = document.createElement("li");
+            li.innerHTML = `<strong>${medal}</strong> ${data.name || '瑜珈同好'} <span style="float:right; color:#ff9800; font-weight:bold;">${data.score || 0} 分</span>`;
+            listElement.appendChild(li);
+            rank++;
+        });
+
+        if (rank === 1) {
+            listElement.innerHTML = '<li style="text-align: center; color: gray;">尚無排行榜資料</li>';
+        }
+    } catch (e) {
+        console.error("讀取排行榜失敗", e);
+    }
+}
+
+// 抽屜按鈕切換事件綁定
 btnProfile?.addEventListener('click', () => {
     const isVisible = profileContainer?.style.display === 'block';
     closeAllPanels();
     if (!isVisible && profileContainer) {
         profileContainer.style.display = 'block';
-        const nameEl = document.getElementById('profile-name');
-        const avatarEl = document.getElementById('profile-avatar');
-        if (nameEl && currentUser) nameEl.innerText = currentUser.displayName || '瑜珈夥伴';
-        if (avatarEl && currentUser) avatarEl.src = currentUser.photoURL || '';
+        loadProfileData(); // 🌟 點開時立刻向 Firebase 撈取數據
     }
 });
 
 toggleHistoryBtn?.addEventListener('click', () => {
     const isVisible = historyContainer?.style.display === 'block';
     closeAllPanels();
-    if (!isVisible && historyContainer) historyContainer.style.display = 'block';
+    if (!isVisible && historyContainer) {
+        historyContainer.style.display = 'block';
+        loadHistoryData(); // 🌟 點開時加載歷史紀錄
+    }
 });
 
 toggleLeaderboardBtn?.addEventListener('click', () => {
     const isVisible = leaderboardContainer?.style.display === 'block';
     closeAllPanels();
-    if (!isVisible && leaderboardContainer) leaderboardContainer.style.display = 'block';
+    if (!isVisible && leaderboardContainer) {
+        leaderboardContainer.style.display = 'block';
+        loadLeaderboardData(); // 🌟 點開時加載排行榜
+    }
 });
