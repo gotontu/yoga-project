@@ -35,7 +35,7 @@ const currentWorkoutTitle = document.getElementById('current-workout-title');
 
 const videoElement = document.getElementById('video');
 const canvasElement = document.getElementById('canvas');
-const canvasCtx = canvasElement.getContext('2d');
+const canvasCtx = canvasElement?.getContext('2d');
 const loadingDiv = document.getElementById('loading');
 
 const statusDisplay = document.getElementById('status-display');
@@ -50,6 +50,7 @@ const poseResultsDiv = document.getElementById('pose-results');
 const saveStatusDiv = document.getElementById('save-status');
 
 const loginBtn = document.getElementById('login-btn'); 
+const startBtn = document.getElementById('start-btn');
 const logoutBtn = document.getElementById('logout-btn');
 const userWelcome = document.getElementById('user-welcome');
 const userDisplay = document.getElementById('user-display');
@@ -64,7 +65,7 @@ const introTips = document.getElementById('intro-tips');
 const introStartBtn = document.getElementById('intro-start-btn');
 
 // ==========================================
-// 🌟 4. 原本的三個動作資料庫 (可替換本機圖片如 "./images/tree.jpg")
+// 🌟 4. 原本的三個動作資料庫
 // ==========================================
 const POSE_DATABASE = [
     {
@@ -125,9 +126,52 @@ let pendingPose = null;
 let cameraActive = false;
 
 // ==========================================
-// 6. 首頁動態渲染 3 個動作卡片
+// 🌟 6. Firebase 身份驗證邏輯 (修復登入與開始體驗流程)
+// ==========================================
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        currentUser = user;
+        if (loginBtn) loginBtn.style.display = 'none';
+        if (startBtn) startBtn.style.display = 'block'; // 顯示「開始體驗」按鈕
+        if (userWelcome) userWelcome.innerText = `準備好了嗎，${user.displayName || '瑜珈夥伴'}？`;
+        if (userDisplay) userDisplay.innerText = `使用者：${user.displayName || '已登入'}`;
+    } else {
+        currentUser = null;
+        if (loginBtn) loginBtn.style.display = 'block';
+        if (startBtn) startBtn.style.display = 'none';
+        if (userWelcome) userWelcome.innerText = "請先登入以記錄你的練習成果";
+        if (landingPage) landingPage.style.display = 'flex';
+        if (homeView) homeView.style.display = 'none';
+        if (workoutView) workoutView.style.display = 'none';
+        if (cameraActive) { camera.stop(); cameraActive = false; }
+    }
+});
+
+// 登入按鈕點擊
+loginBtn?.addEventListener('click', () => {
+    signInWithPopup(auth, provider).catch(err => {
+        console.error("登入失敗", err);
+        alert("登入失敗：" + (err.message || "請檢查網路連線或 Firebase 網域白名單"));
+    });
+});
+
+// 點擊「開始體驗」按鈕：進入首頁大廳
+startBtn?.addEventListener('click', () => {
+    if (landingPage) landingPage.style.display = 'none';
+    if (homeView) homeView.style.display = 'flex';
+    renderActionGrid();
+});
+
+// 登出按鈕點擊
+logoutBtn?.addEventListener('click', () => {
+    signOut(auth);
+});
+
+// ==========================================
+// 7. 首頁動態渲染 3 個動作卡片
 // ==========================================
 function renderActionGrid() {
+    if (!actionsGrid) return;
     actionsGrid.innerHTML = '';
     POSE_DATABASE.forEach(pose => {
         const card = document.createElement('div');
@@ -154,11 +198,13 @@ function renderActionGrid() {
 // 點擊卡片：進入偵測室、開啟相機、跳出介紹彈窗
 function enterWorkout(poseId) {
     closeAllPanels();
-    homeView.style.display = 'none';
-    workoutView.style.display = 'flex';
+    if (homeView) homeView.style.display = 'none';
+    if (workoutView) workoutView.style.display = 'flex';
     
     const poseItem = POSE_DATABASE.find(p => p.id === poseId);
-    currentWorkoutTitle.innerText = `${poseItem.title} 練習室`;
+    if (currentWorkoutTitle && poseItem) {
+        currentWorkoutTitle.innerText = `${poseItem.title} 練習室`;
+    }
     
     if (!cameraActive) {
         camera.start();
@@ -169,9 +215,9 @@ function enterWorkout(poseId) {
 }
 
 // 點擊返回：關閉訓練室與相機，回到首頁大廳
-btnBackHome.addEventListener('click', () => {
-    workoutView.style.display = 'none';
-    homeView.style.display = 'flex';
+btnBackHome?.addEventListener('click', () => {
+    if (workoutView) workoutView.style.display = 'none';
+    if (homeView) homeView.style.display = 'flex';
 
     if (cameraActive) {
         camera.stop();
@@ -183,7 +229,7 @@ btnBackHome.addEventListener('click', () => {
 });
 
 // ==========================================
-// 7. 彈窗與 3 秒倒數計時
+// 8. 彈窗與 3 秒倒數計時
 // ==========================================
 function openPoseIntro(poseKey) {
     const guide = POSE_DATABASE.find(p => p.id === poseKey);
@@ -195,19 +241,21 @@ function openPoseIntro(poseKey) {
     pendingPose = poseKey;
     isIntroActive = true;
 
-    introTitle.innerText = `${guide.title} (${guide.subtitle})`;
-    introDesc.innerText = guide.desc;
-    introTips.innerHTML = guide.tips.map(tip => `<li>${tip}</li>`).join('');
+    if (introTitle) introTitle.innerText = `${guide.title} (${guide.subtitle})`;
+    if (introDesc) introDesc.innerText = guide.desc;
+    if (introTips) introTips.innerHTML = guide.tips.map(tip => `<li>${tip}</li>`).join('');
 
-    introVideo.style.display = 'none';
-    introImage.src = guide.img;
-    introImage.style.display = 'block';
+    if (introVideo) introVideo.style.display = 'none';
+    if (introImage) {
+        introImage.src = guide.img;
+        introImage.style.display = 'block';
+    }
 
     introModal.style.display = 'flex';
 }
 
-introStartBtn.addEventListener('click', () => {
-    introModal.style.display = 'none';
+introStartBtn?.addEventListener('click', () => {
+    if (introModal) introModal.style.display = 'none';
     isIntroActive = false;
     if (pendingPose) {
         startCountdownForPose(pendingPose);
@@ -218,6 +266,11 @@ function startCountdownForPose(poseKey) {
     const overlay = document.getElementById('countdown-overlay');
     const numberDiv = document.getElementById('countdown-number');
     const guide = POSE_DATABASE.find(p => p.id === poseKey);
+
+    if (!overlay || !numberDiv) {
+        switchPose(poseKey);
+        return;
+    }
 
     overlay.style.display = 'flex';
     let count = 3;
@@ -246,37 +299,13 @@ function switchPose(poseName) {
     if (saveStatusDiv) saveStatusDiv.innerText = '';
     statusDisplay?.classList.remove('error', 'perfect');
 
-    treeInfo.style.display = poseName === 'tree' ? 'block' : 'none';
-    squatInfo.style.display = poseName === 'squat' ? 'block' : 'none';
-    genericInfo.style.display = poseName === 'Raise' ? 'block' : 'none';
+    if (treeInfo) treeInfo.style.display = poseName === 'tree' ? 'block' : 'none';
+    if (squatInfo) squatInfo.style.display = poseName === 'squat' ? 'block' : 'none';
+    if (genericInfo) genericInfo.style.display = poseName === 'Raise' ? 'block' : 'none';
 
     const currentObj = POSE_DATABASE.find(p => p.id === poseName);
-    poseTitle.innerText = `${currentObj ? currentObj.title : poseName} 偵測`;
+    if (poseTitle) poseTitle.innerText = `${currentObj ? currentObj.title : poseName} 偵測`;
 }
-
-// ==========================================
-// 8. Firebase 身份驗證
-// ==========================================
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        currentUser = user;
-        landingPage.style.display = 'none';
-        homeView.style.display = 'flex';
-        userDisplay.innerText = `使用者：${user.displayName}`;
-        renderActionGrid();
-    } else {
-        currentUser = null;
-        landingPage.style.display = 'flex';
-        homeView.style.display = 'none';
-        workoutView.style.display = 'none';
-        if (cameraActive) { camera.stop(); cameraActive = false; }
-    }
-});
-
-loginBtn?.addEventListener('click', () => {
-    signInWithPopup(auth, provider).catch(err => console.error("登入失敗", err));
-});
-logoutBtn?.addEventListener('click', () => signOut(auth));
 
 // ==========================================
 // 9. 幾何運算與語音提示
@@ -300,12 +329,14 @@ function speakHint(text, cooldown = 3000) {
 }
 
 // ==========================================
-// 🌟 10. AI 偵測主邏輯 (含已修正的大樹式)
+// 🌟 10. AI 偵測主邏輯 (修正後大樹式、深蹲、平舉)
 // ==========================================
 function onResults(results) {
     if (loadingDiv && loadingDiv.style.display !== 'none') {
         loadingDiv.style.display = 'none';
     }
+
+    if (!canvasCtx || !canvasElement) return;
 
     canvasCtx.save();
     canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
@@ -336,9 +367,7 @@ function onResults(results) {
 
             if (shoulderL && shoulderR && hipL && hipR && kneeL && kneeR && ankleL && ankleR) {
 
-                // ==========================================
-                // 🌟 大樹式 (修正：左右腿自動辨識 + 雙手過頭/合十)
-                // ==========================================
+                // === 🌟 大樹式 ===
                 if (currentPoseMode === 'tree') {
                     let isArmError = false;
                     let isLegError = false;
@@ -351,25 +380,20 @@ function onResults(results) {
 
                     if (isRightLegLifted) {
                         if (leftKneeAngle < 150) {
-                            legStatusDiv.innerText = "錯誤：支撐腳（左腳）請伸直！";
-                            legStatusDiv.style.color = "var(--error-color)";
+                            if (legStatusDiv) { legStatusDiv.innerText = "錯誤：支撐腳（左腳）請伸直！"; legStatusDiv.style.color = "var(--error-color)"; }
                             isLegError = true;
                         } else {
-                            legStatusDiv.innerText = "腿部 PERFECT！(左腳站穩，右腳抬起)";
-                            legStatusDiv.style.color = "var(--success-color)";
+                            if (legStatusDiv) { legStatusDiv.innerText = "腿部 PERFECT！(左腳站穩，右腳抬起)"; legStatusDiv.style.color = "var(--success-color)"; }
                         }
                     } else if (isLeftLegLifted) {
                         if (rightKneeAngle < 150) {
-                            legStatusDiv.innerText = "錯誤：支撐腳（右腳）請伸直！";
-                            legStatusDiv.style.color = "var(--error-color)";
+                            if (legStatusDiv) { legStatusDiv.innerText = "錯誤：支撐腳（右腳）請伸直！"; legStatusDiv.style.color = "var(--error-color)"; }
                             isLegError = true;
                         } else {
-                            legStatusDiv.innerText = "腿部 PERFECT！(右腳站穩，左腳抬起)";
-                            legStatusDiv.style.color = "var(--success-color)";
+                            if (legStatusDiv) { legStatusDiv.innerText = "腿部 PERFECT！(右腳站穩，左腳抬起)"; legStatusDiv.style.color = "var(--success-color)"; }
                         }
                     } else {
-                        legStatusDiv.innerText = "請單腳站穩，另一腳曲膝抬高貼於腿側";
-                        legStatusDiv.style.color = "var(--error-color)";
+                        if (legStatusDiv) { legStatusDiv.innerText = "請單腳站穩，另一腳曲膝抬高貼於腿側"; legStatusDiv.style.color = "var(--error-color)"; }
                         isLegError = true;
                     }
 
@@ -382,30 +406,26 @@ function onResults(results) {
 
                     if (isOverhead) {
                         if (leftElbowAngle < 125 || rightElbowAngle < 125) {
-                            armStatusDiv.innerText = "錯誤：雙手高舉時請伸直手肘！";
-                            armStatusDiv.style.color = "var(--error-color)";
+                            if (armStatusDiv) { armStatusDiv.innerText = "錯誤：雙手高舉時請伸直手肘！"; armStatusDiv.style.color = "var(--error-color)"; }
                             isArmError = true;
                         } else {
-                            armStatusDiv.innerText = "手臂 PERFECT！(高舉伸展)";
-                            armStatusDiv.style.color = "var(--success-color)";
+                            if (armStatusDiv) { armStatusDiv.innerText = "手臂 PERFECT！(高舉伸展)"; armStatusDiv.style.color = "var(--success-color)"; }
                         }
                     } else if (isPraying) {
-                        armStatusDiv.innerText = "手臂 PERFECT！(胸前合十)";
-                        armStatusDiv.style.color = "var(--success-color)";
+                        if (armStatusDiv) { armStatusDiv.innerText = "手臂 PERFECT！(胸前合十)"; armStatusDiv.style.color = "var(--success-color)"; }
                     } else {
-                        armStatusDiv.innerText = "手部請舉過頭頂，或於胸前合十";
-                        armStatusDiv.style.color = "var(--error-color)";
+                        if (armStatusDiv) { armStatusDiv.innerText = "手部請舉過頭頂，或於胸前合十"; armStatusDiv.style.color = "var(--error-color)"; }
                         isArmError = true;
                     }
 
                     if (isArmError || isLegError) {
-                        statusDisplay.classList.add('error');
-                        statusDisplay.classList.remove('perfect');
+                        statusDisplay?.classList.add('error');
+                        statusDisplay?.classList.remove('perfect');
                         perfectStartTime = 0;
                         hasSavedThisRep = false;
                     } else {
-                        statusDisplay.classList.remove('error');
-                        statusDisplay.classList.add('perfect');
+                        statusDisplay?.classList.remove('error');
+                        statusDisplay?.classList.add('perfect');
                         if (perfectStartTime === 0) perfectStartTime = Date.now();
                         const holdDuration = Date.now() - perfectStartTime;
 
@@ -413,14 +433,14 @@ function onResults(results) {
                             if (!hasSavedThisRep) handlePoseSuccess('大樹式');
                         } else {
                             const secondsLeft = Math.ceil((5000 - holdDuration) / 1000);
-                            armStatusDiv.innerText = `PERFECT! 請維持平衡 ${secondsLeft} 秒...`;
-                            armStatusDiv.style.color = "var(--success-color)";
+                            if (armStatusDiv) {
+                                armStatusDiv.innerText = `PERFECT! 請維持平衡 ${secondsLeft} 秒...`;
+                                armStatusDiv.style.color = "var(--success-color)";
+                            }
                         }
                     }
 
-                // ==========================================
-                // 🌟 深蹲 (Squat)
-                // ==========================================
+                // === 🌟 深蹲 ===
                 } else if (currentPoseMode === 'squat') {
                     const squatHipAngle = calculateAngle(shoulderR, hipR, kneeR);   
                     const squatKneeAngle = calculateAngle(hipR, kneeR, ankleR);    
@@ -440,28 +460,28 @@ function onResults(results) {
                         }
                     }
 
-                    squatStatusDiv.innerText = squatStatus;
-                    squatStatusDiv.style.color = squatColor;
+                    if (squatStatusDiv) {
+                        squatStatusDiv.innerText = squatStatus;
+                        squatStatusDiv.style.color = squatColor;
+                    }
 
                     if (squatColor === 'var(--success-color)') {
-                        statusDisplay.classList.remove('error');
-                        statusDisplay.classList.add('perfect');
+                        statusDisplay?.classList.remove('error');
+                        statusDisplay?.classList.add('perfect');
                         if (perfectStartTime === 0) perfectStartTime = Date.now();
                         const holdDuration = Date.now() - perfectStartTime;
                         if (holdDuration >= 5000) {
                             if (!hasSavedThisRep) handlePoseSuccess('深蹲');
                         } else {
                             const secondsLeft = Math.ceil((5000 - holdDuration) / 1000);
-                            squatStatusDiv.innerText = `HOLD 住了！維持 ${secondsLeft} 秒...`;
+                            if (squatStatusDiv) squatStatusDiv.innerText = `HOLD 住了！維持 ${secondsLeft} 秒...`;
                         }
                     } else {
-                        statusDisplay.classList.remove('perfect');
+                        statusDisplay?.classList.remove('perfect');
                         perfectStartTime = 0;
                     }
 
-                // ==========================================
-                // 🌟 側平舉 (Raise)
-                // ==========================================
+                // === 🌟 側平舉 ===
                 } else if (currentPoseMode === 'Raise') {
                     const rules = YOGA_DATABASE[currentPoseMode];
                     let perfectCount = 0;
@@ -479,8 +499,8 @@ function onResults(results) {
                     });
 
                     if (perfectCount === rules.length) {
-                        statusDisplay.classList.add('perfect');
-                        statusDisplay.classList.remove('error');
+                        statusDisplay?.classList.add('perfect');
+                        statusDisplay?.classList.remove('error');
                         if (perfectStartTime === 0) perfectStartTime = Date.now();
                         const holdDuration = Date.now() - perfectStartTime;
 
@@ -489,12 +509,12 @@ function onResults(results) {
                             speakHint("平舉完成，太棒了！", 1000);
                         } else {
                             const secondsLeft = Math.ceil((5000 - holdDuration) / 1000);
-                            poseResultsDiv.innerHTML = `<span style="color: var(--success-color); font-weight: bold;">PERFECT! 請維持 ${secondsLeft} 秒...</span>`;
+                            if (poseResultsDiv) poseResultsDiv.innerHTML = `<span style="color: var(--success-color); font-weight: bold;">PERFECT! 請維持 ${secondsLeft} 秒...</span>`;
                         }
                     } else {
-                        poseResultsDiv.innerHTML = errors.map(e => `<div style="color: var(--error-color); margin-bottom: 5px;">${e}</div>`).join('');
-                        statusDisplay.classList.add('error');
-                        statusDisplay.classList.remove('perfect');
+                        if (poseResultsDiv) poseResultsDiv.innerHTML = errors.map(e => `<div style="color: var(--error-color); margin-bottom: 5px;">${e}</div>`).join('');
+                        statusDisplay?.classList.add('error');
+                        statusDisplay?.classList.remove('perfect');
                         perfectStartTime = 0;
                     }
                 }
@@ -564,23 +584,25 @@ function closeAllPanels() {
 }
 
 btnProfile?.addEventListener('click', () => {
-    const isVisible = profileContainer.style.display === 'block';
+    const isVisible = profileContainer?.style.display === 'block';
     closeAllPanels();
-    if (!isVisible) {
+    if (!isVisible && profileContainer) {
         profileContainer.style.display = 'block';
-        document.getElementById('profile-name').innerText = currentUser.displayName;
-        document.getElementById('profile-avatar').src = currentUser.photoURL || '';
+        const nameEl = document.getElementById('profile-name');
+        const avatarEl = document.getElementById('profile-avatar');
+        if (nameEl && currentUser) nameEl.innerText = currentUser.displayName || '瑜珈夥伴';
+        if (avatarEl && currentUser) avatarEl.src = currentUser.photoURL || '';
     }
 });
 
 toggleHistoryBtn?.addEventListener('click', () => {
-    const isVisible = historyContainer.style.display === 'block';
+    const isVisible = historyContainer?.style.display === 'block';
     closeAllPanels();
-    if (!isVisible) historyContainer.style.display = 'block';
+    if (!isVisible && historyContainer) historyContainer.style.display = 'block';
 });
 
 toggleLeaderboardBtn?.addEventListener('click', () => {
-    const isVisible = leaderboardContainer.style.display === 'block';
+    const isVisible = leaderboardContainer?.style.display === 'block';
     closeAllPanels();
-    if (!isVisible) leaderboardContainer.style.display = 'block';
+    if (!isVisible && leaderboardContainer) leaderboardContainer.style.display = 'block';
 });
