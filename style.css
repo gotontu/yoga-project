@@ -175,7 +175,7 @@ body {
 #workout-view {
 display: flex !important;
     flex-direction: row !important;
-    justify-content: flex-start !important; /* 🌟 關鍵：將置中(center)改為靠左(flex-start) */
+    justify-content: flex-start !important; /* 置中(center)改為靠左(flex-start) */
     align-items: flex-start !important;
     padding: 30px !important; 
     gap: 80px !important; /* 增加左側選單與中央鏡頭的間距，讓畫面不擁擠 */
@@ -185,21 +185,6 @@ display: flex !important;
 /* 隱藏偵測標題 */
 #pose-title {
     display: none !important;
-}
-
-/* 縮小提示框，解決超出畫面 */
-#status-display {
-    position: static !important; 
-    margin: 15px auto 0 auto !important; /* 從 25px 縮小為 15px */
-    text-align: center !important;
-    background-color: var(--panel-color) !important;
-    padding: 15px 20px !important; /* 縮小上下內距，騰出垂直空間 */
-    border-radius: 12px !important;
-    color: white !important;
-    width: 640px !important;
-    border: none !important; 
-    border-top: 5px solid #57606f !important;
-    box-sizing: border-box;
 }
 
 /* 2. 左側控制面板 */
