@@ -47,12 +47,10 @@ const userDisplay = document.getElementById('user-display');
 
 // 側邊欄與大字幕 DOM (新版)
 const btnBackHome = document.getElementById('btn-back-home');
-const btnStopWorkout = document.getElementById('btn-stop-workout');
 const btnReIntro = document.getElementById('btn-re-intro');
 const badge1El = document.getElementById('prompt-badge-1');
 const badge2El = document.getElementById('prompt-badge-2');
 const messageEl = document.getElementById('prompt-message');
-const sidebarStatusText = document.getElementById('sidebar-status-text');
 const sidebarStatusBox = document.getElementById('sidebar-status-box');
 
 // 彈窗相關元素
@@ -323,23 +321,18 @@ function setUIFeedback(badge1, badge2, message, status) {
     if (badge2El) badge2El.innerText = badge2;
     if (messageEl) messageEl.innerText = message;
     
-    if (sidebarStatusText) sidebarStatusText.innerText = (status === 'perfect') ? '動作標準' : '請調整姿勢';
-    
     if (status === 'error') {
         badge1El.className = 'badge-blue';
         badge2El.className = 'badge-red';
         messageEl.className = 'prompt-message-blue';
-        if(sidebarStatusBox) sidebarStatusBox.style.backgroundColor = '#c0392b';
     } else if (status === 'perfect') {
         badge1El.className = 'badge-green';
         badge2El.className = 'badge-green';
         messageEl.className = 'prompt-message-green';
-        if(sidebarStatusBox) sidebarStatusBox.style.backgroundColor = '#27ae60';
     } else {
         badge1El.className = 'badge-gray';
         badge2El.className = 'badge-gray';
         messageEl.className = 'prompt-message-gray';
-        if(sidebarStatusBox) sidebarStatusBox.style.backgroundColor = '#1b4332';
     }
 }
 
