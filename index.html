@@ -93,42 +93,49 @@
         </main>
     </div>
 
-    <!-- 3. 訓練偵測室 (Workout View) -->
+    <!-- 3. 訓練偵測室 (Workout View) - 參照圖一大字版排版 -->
     <div id="workout-view" style="display: none;">
-        <div class="workout-header">
-            <button id="btn-back-home" class="back-home-btn">⬅️ 返回動作選單</button>
-            <h2 id="current-workout-title">動作練習室</h2>
-            <div style="width: 140px;"></div>
-        </div>
-
-        <div id="video-container">
-            <div id="loading">啟動鏡頭與 AI 模型中...</div>
-            <video id="video" width="640" height="480" autoplay playsinline muted></video>
-            <canvas id="canvas" width="640" height="480"></canvas>
-
-            <div id="status-display">
-                <div id="pose-title">動作偵測中</div>
-                
-                <div id="tree-info">
-                    <div class="status-title">手部狀態：</div>
-                    <div id="arm-status" class="status-value">等待姿勢...</div>
-                    <div class="status-title">腿部狀態：</div>
-                    <div id="leg-status" class="status-value">等待姿勢...</div>
-                </div>
-                
-                <div id="squat-info" style="display: none;">
-                    <div class="status-title">身體狀態：</div>
-                    <div id="squat-status" class="status-value">請開始深蹲</div>
-                </div>
-
-                <div id="generic-info" style="display: none;">
-                    <div class="status-title">動作提示：</div>
-                    <div id="pose-results" class="status-value">等待偵測...</div>
-                </div>
-
-                <div id="save-status"></div>
+        
+        <!-- 左側操作區 -->
+        <aside class="workout-sidebar">
+            <h2 class="sidebar-title">操作區</h2>
+            
+            <div class="sidebar-search">
+                <span class="search-icon">🔍</span>
+                <span id="current-workout-title" class="search-text">大樹式</span>
             </div>
-        </div>
+            
+            <div class="sidebar-controls">
+                <button class="action-btn btn-brown" id="btn-re-intro">教學</button>
+            </div>
+
+            <div class="status-indicator" id="sidebar-status-box">
+                狀態：<span id="sidebar-status-text">請調整姿勢</span>
+            </div>
+            
+            <div class="sidebar-footer">
+                <button id="btn-back-home" class="sidebar-btn btn-outline" style="width: 100%;">⬅️ 返回動作選單</button>
+            </div>
+        </aside>
+
+        <!-- 右側主畫面區 -->
+        <main class="workout-main">
+            <div class="video-header">鏡頭 / 動作偵測</div>
+            <div id="video-container">
+                <div id="loading">啟動鏡頭與 AI 模型中...</div>
+                <video id="video" autoplay playsinline muted></video>
+                <canvas id="canvas"></canvas>
+            </div>
+            
+            <!-- 超大字幕提示區 -->
+            <div id="huge-prompt-container">
+                <div class="prompt-badges">
+                    <span id="prompt-badge-1" class="badge-gray">等待</span>
+                    <span id="prompt-badge-2" class="badge-gray">偵測</span>
+                </div>
+                <div id="prompt-message" class="prompt-message-gray">請站到鏡頭前並準備開始</div>
+            </div>
+        </main>
     </div>
 
     <!-- 教學引導彈窗 -->
