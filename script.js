@@ -81,15 +81,19 @@ const yogaRoutine = ['tree', 'squat', 'Raise'];
 let currentRoutineIndex = 0; 
 let isRoutineMode = false;   
 let isTransitioning = false; 
-let routineStartTime = 0; // 用於計算總練習時長
+let routineStartTime = 0;
 
 const POSE_GUIDES = {
     'tree': {
         title: "大樹式 (Tree Pose)",
-        type: "video",
-        src: "https://www.w3schools.com/html/mov_bbb.mp4", 
-        desc: "大樹式能訓練下肢肌力與專注度，幫助平衡身心。",
-        tips: ["雙手平舉或合十並伸直手肘", "支撐腳踩穩，另一腳抬至大腿或小腿內側", "切勿將腳掌直接壓在膝關節上"]
+        type: "image",
+        src: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=600&q=80", 
+        desc: "大樹式能訓練下肢肌力、單腳平衡感與專注度。",
+        tips: [
+            "支撐腳請伸直站穩，另一腳曲膝抬起貼於大腿或小腿側",
+            "切勿將腳掌直接壓在支撐腳膝蓋關節上",
+            "雙手向上高舉伸展，或於胸前合十"
+        ]
     },
     'squat': {
         title: "深蹲 (Squat)",
@@ -264,7 +268,7 @@ function renderHistoryChart(labels, dataPoints) {
 }
 
 // ==========================================
-// 🌟 7. 集中處理動作成功與換場邏輯 (圖四結算邏輯)
+// 🌟 7. 集中處理動作成功與換場邏輯
 // ==========================================
 function handlePoseSuccess(poseNameChinese) {
     saveDailyRecord(poseNameChinese, 'Perfect'); 
@@ -286,12 +290,11 @@ function handlePoseSuccess(poseNameChinese) {
 
             setTimeout(() => {
                 isTransitioning = false;
-                openPoseIntro(nextPose); // 切換動作彈出介紹
+                openPoseIntro(nextPose);
                 if(btnFlow) btnFlow.classList.add('active'); 
             }, 5000);
             
         } else {
-            // 所有動作完成，觸發圖四結算畫面
             isTransitioning = false;
             showSummaryScreen();
         }
@@ -303,19 +306,21 @@ function handlePoseSuccess(poseNameChinese) {
     }
 }
 
-// 觸發結算畫面
 function showSummaryScreen() {
+    if (!summaryScreen) return;
     const timeDiffMs = Date.now() - routineStartTime;
     const minutes = Math.max(1, Math.floor(timeDiffMs / 60000));
-    // 簡單的熱量公式模擬 (實際依據動作數與時間)
     const calories = Math.max(1, (minutes * 3) + (yogaRoutine.length * 5)); 
 
-    document.getElementById('summary-actions').innerText = yogaRoutine.length;
-    document.getElementById('summary-time').innerText = minutes;
-    document.getElementById('summary-cal').innerText = calories;
-    
-    // 假設連續天數可從歷史紀錄算，這裡先給個模擬值 1
-    document.getElementById('summary-days').innerText = "1"; 
+    const actElem = document.getElementById('summary-actions');
+    const timeElem = document.getElementById('summary-time');
+    const calElem = document.getElementById('summary-cal');
+    const daysElem = document.getElementById('summary-days');
+
+    if (actElem) actElem.innerText = yogaRoutine.length;
+    if (timeElem) timeElem.innerText = minutes;
+    if (calElem) calElem.innerText = calories;
+    if (daysElem) daysElem.innerText = "1"; 
 
     summaryScreen.style.display = 'flex';
     speakHint("恭喜你！今日瑜珈挑戰全數完成！");
@@ -324,16 +329,15 @@ function showSummaryScreen() {
     if(btnFlow) btnFlow.classList.remove('active'); 
 }
 
-// 結算畫面關閉按鈕
 if (summaryCloseBtn) {
     summaryCloseBtn.addEventListener('click', () => {
-        summaryScreen.style.display = 'none';
+        if (summaryScreen) summaryScreen.style.display = 'none';
         if(!isHistoryVisible && toggleHistoryBtn) toggleHistoryBtn.click();
     });
 }
 
 // ==========================================
-// 🌟 8. 動作介紹彈窗、倒數計時與切換邏輯 (圖三倒數)
+// 🌟 8. 動作介紹彈窗、倒數計時與切換邏輯
 // ==========================================
 function openPoseIntro(poseKey) {
     const guide = POSE_GUIDES[poseKey];
@@ -378,7 +382,7 @@ if (introStartBtn) {
 
         isIntroActive = false;
         if (pendingPose) {
-            startCountdownForPose(pendingPose); // 點擊準備好後，進入 3 秒倒數
+            startCountdownForPose(pendingPose);
         }
     });
 }
@@ -387,6 +391,11 @@ function startCountdownForPose(poseKey) {
     const overlay = document.getElementById('countdown-overlay');
     const numberDiv = document.getElementById('countdown-number');
     const guide = POSE_GUIDES[poseKey];
+
+    if (!overlay || !numberDiv) {
+        switchPose(poseKey);
+        return;
+    }
 
     overlay.style.display = 'flex';
     let count = 3;
@@ -401,7 +410,7 @@ function startCountdownForPose(poseKey) {
         } else {
             clearInterval(timer);
             overlay.style.display = 'none';
-            switchPose(poseKey); // 倒數完畢切換 UI 與動作模型
+            switchPose(poseKey);
             speakHint(`開始${guide ? guide.title : poseKey}，請就定位`, 1000);
         }
     }, 1000);
@@ -440,7 +449,6 @@ function switchPose(poseName) {
     }
 }
 
-// 綁定各動作按鈕：點擊後先開啟彈窗預覽
 btnTree?.addEventListener('click', () => { isRoutineMode = false; openPoseIntro('tree'); });
 btnSquat?.addEventListener('click', () => { isRoutineMode = false; openPoseIntro('squat'); });
 btnRaise?.addEventListener('click', () => { isRoutineMode = false; openPoseIntro('Raise'); });
@@ -450,7 +458,7 @@ if (btnFlow) {
         isRoutineMode = true;
         currentRoutineIndex = 0; 
         isTransitioning = false; 
-        routineStartTime = Date.now(); // 記錄流程開始時間 (供圖四計算)
+        routineStartTime = Date.now(); 
         btnFlow.classList.add('active'); 
         
         openPoseIntro(yogaRoutine[currentRoutineIndex]); 
@@ -482,7 +490,6 @@ function startApp() {
         if (landingPage) landingPage.style.display = 'none';
         if (mainApp) mainApp.style.display = 'flex';
         camera.start(); 
-        // 進入主畫面後，先預設展示大樹式引導
         openPoseIntro('tree');
     }, 500);
 }
@@ -503,7 +510,7 @@ function speakHint(text, cooldown = 3000) {
 }
 
 // ==========================================
-// 🌟 10. AI 偵測邏輯 (加入彈窗與倒數時的暫停防護)
+// 🌟 10. AI 偵測邏輯（徹底修正大樹式）
 // ==========================================
 function onResults(results) {
     if (loadingDiv && loadingDiv.style.display !== 'none') {
@@ -514,9 +521,9 @@ function onResults(results) {
     canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
     canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
-    const isCountdownActive = document.getElementById('countdown-overlay').style.display === 'flex';
+    const countdownOverlay = document.getElementById('countdown-overlay');
+    const isCountdownActive = countdownOverlay && countdownOverlay.style.display === 'flex';
 
-    // 若正處於教學彈窗觀看中或倒數中，僅顯示灰色背景輔助骨架，不執行動作評分
     if (isIntroActive || isCountdownActive) {
         if (results.poseLandmarks) {
             drawConnectors(canvasCtx, results.poseLandmarks, POSE_CONNECTIONS, {color: '#7f8c8d', lineWidth: 2});
@@ -538,46 +545,96 @@ function onResults(results) {
         drawLandmarks(canvasCtx, results.poseLandmarks, {color: '#FF0000', lineWidth: 2});
 
         try {
-            const landmarks = results.poseLandmarks;
-            const shoulder = landmarks[12]; const elbow = landmarks[14]; const wrist = landmarks[16];   
-            const hip = landmarks[24]; const knee = landmarks[26]; const ankle = landmarks[28];   
+            const lm = results.poseLandmarks;
 
-            if (shoulder && elbow && wrist && hip && knee && ankle) {
-                const elbowAngle = calculateAngle(shoulder, elbow, wrist); 
-                const shoulderAngle = calculateAngle(hip, shoulder, elbow); 
-                const kneeAngle = calculateAngle(hip, knee, ankle);         
-                const legAngle = calculateAngle(shoulder, hip, knee);      
+            // 左右關鍵點
+            const shoulderL = lm[11]; const elbowL = lm[13]; const wristL = lm[15];
+            const shoulderR = lm[12]; const elbowR = lm[14]; const wristR = lm[16];
+            const hipL = lm[23]; const kneeL = lm[25]; const ankleL = lm[27];
+            const hipR = lm[24]; const kneeR = lm[26]; const ankleR = lm[28];
 
-                // === 大樹式 ===
+            if (shoulderL && shoulderR && hipL && hipR && kneeL && kneeR && ankleL && ankleR) {
+
+                // ========================================================
+                // 🌟 大樹式 (Tree Pose) 最佳化邏輯
+                // ========================================================
                 if (currentPoseMode === 'tree') {
-                    let isArmError = false; let isLegError = false;
+                    let isArmError = false;
+                    let isLegError = false;
 
-                    if (elbowAngle < 110) { //160
-                        armStatusDiv.innerText = "錯誤：手肘彎曲了！請伸直。"; armStatusDiv.style.color = "var(--error-color)"; isArmError = true;
-                    } else if (shoulderAngle < 120) {  //75
-                        armStatusDiv.innerText = "錯誤：手臂掉下來了！請抬高。"; armStatusDiv.style.color = "var(--error-color)"; isArmError = true;
-                    } else if (shoulderAngle > 175) { //105
-                        armStatusDiv.innerText = "錯誤：手臂舉太高了！請放平。"; armStatusDiv.style.color = "var(--error-color)"; isArmError = true;
+                    // 1. 計算左右膝蓋伸展角
+                    const leftKneeAngle = calculateAngle(hipL, kneeL, ankleL);
+                    const rightKneeAngle = calculateAngle(hipR, kneeR, ankleR);
+
+                    // 判斷哪隻腳為抬起腳（高度明顯高於站立腳踝，y 座標越小代表越高）
+                    const isRightLegLifted = (ankleR.y < ankleL.y - 0.05) && (rightKneeAngle < 145);
+                    const isLeftLegLifted = (ankleL.y < ankleR.y - 0.05) && (leftKneeAngle < 145);
+
+                    if (isRightLegLifted) {
+                        // 右腳曲膝抬起 -> 左腳必須伸直支撐
+                        if (leftKneeAngle < 150) {
+                            legStatusDiv.innerText = "錯誤：支撐腳（左腳）請伸直！";
+                            legStatusDiv.style.color = "var(--error-color)";
+                            isLegError = true;
+                        } else {
+                            legStatusDiv.innerText = "腿部 PERFECT！(左腳站穩，右腳抬起)";
+                            legStatusDiv.style.color = "var(--success-color)";
+                        }
+                    } else if (isLeftLegLifted) {
+                        // 左腳曲膝抬起 -> 右腳必須伸直支撐
+                        if (rightKneeAngle < 150) {
+                            legStatusDiv.innerText = "錯誤：支撐腳（右腳）請伸直！";
+                            legStatusDiv.style.color = "var(--error-color)";
+                            isLegError = true;
+                        } else {
+                            legStatusDiv.innerText = "腿部 PERFECT！(右腳站穩，左腳抬起)";
+                            legStatusDiv.style.color = "var(--success-color)";
+                        }
                     } else {
-                        armStatusDiv.innerText = "手臂 PERFECT！"; armStatusDiv.style.color = "var(--success-color)";
+                        legStatusDiv.innerText = "請單腳站穩，另一腳曲膝抬高貼於腿側";
+                        legStatusDiv.style.color = "var(--error-color)";
+                        isLegError = true;
                     }
 
-                    if (legAngle > 90) { //110
-                        legStatusDiv.innerText = "錯誤：再抬高腿！"; legStatusDiv.style.color = "var(--error-color)"; isLegError = true;
-                    } else if (legAngle < 75) { //75
-                        legStatusDiv.innerText = "錯誤：腳低一點！"; legStatusDiv.style.color = "var(--error-color)"; isLegError = true;
-                    } else if (kneeAngle > 85) { //<160
-                        legStatusDiv.innerText = "錯誤：請把腳彎曲！"; legStatusDiv.style.color = "var(--error-color)"; isLegError = true;
+                    // 2. 手部判定：同時相容「雙手高舉過頭頂」與「胸前合十」
+                    const leftElbowAngle = calculateAngle(shoulderL, elbowL, wristL);
+                    const rightElbowAngle = calculateAngle(shoulderR, elbowR, wristR);
+                    
+                    // 檢查是否高舉過頭頂
+                    const isOverhead = (wristL.y < shoulderL.y) && (wristR.y < shoulderR.y);
+                    // 檢查是否雙手在胸前合十 (手腕接近、且在胸腹區間)
+                    const isPraying = (Math.abs(wristL.x - wristR.x) < 0.15) && 
+                                      (Math.abs(wristL.y - wristR.y) < 0.15) && 
+                                      (wristL.y < hipL.y) && (wristL.y > shoulderL.y - 0.05);
+
+                    if (isOverhead) {
+                        if (leftElbowAngle < 125 || rightElbowAngle < 125) {
+                            armStatusDiv.innerText = "錯誤：雙手高舉時請盡量打直手肘！";
+                            armStatusDiv.style.color = "var(--error-color)";
+                            isArmError = true;
+                        } else {
+                            armStatusDiv.innerText = "手臂 PERFECT！(高舉伸展)";
+                            armStatusDiv.style.color = "var(--success-color)";
+                        }
+                    } else if (isPraying) {
+                        armStatusDiv.innerText = "手臂 PERFECT！(胸前合十)";
+                        armStatusDiv.style.color = "var(--success-color)";
                     } else {
-                        legStatusDiv.innerText = "完美抬腿！"; legStatusDiv.style.color = "var(--success-color)";
+                        armStatusDiv.innerText = "手部請向上舉過頭頂，或於胸前合十";
+                        armStatusDiv.style.color = "var(--error-color)";
+                        isArmError = true;
                     }
 
+                    // 3. 5秒維持判定
                     if (isArmError || isLegError) {
-                        statusDisplay.classList.add('error'); statusDisplay.classList.remove('perfect');
-                        perfectStartTime = 0; hasSavedThisRep = false; 
+                        statusDisplay.classList.add('error');
+                        statusDisplay.classList.remove('perfect');
+                        perfectStartTime = 0;
+                        hasSavedThisRep = false;
                     } else {
-                        statusDisplay.classList.remove('error'); statusDisplay.classList.add('perfect');
-                        
+                        statusDisplay.classList.remove('error');
+                        statusDisplay.classList.add('perfect');
+
                         if (perfectStartTime === 0) perfectStartTime = Date.now();
                         const holdDuration = Date.now() - perfectStartTime;
 
@@ -585,37 +642,47 @@ function onResults(results) {
                             if (!hasSavedThisRep) handlePoseSuccess('大樹式');
                         } else {
                             const secondsLeft = Math.ceil((5000 - holdDuration) / 1000);
-                            armStatusDiv.innerText = `PERFECT! 請維持 ${secondsLeft} 秒...`; 
+                            armStatusDiv.innerText = `PERFECT! 請維持平衡 ${secondsLeft} 秒...`;
                             armStatusDiv.style.color = "var(--success-color)";
                         }
                     }
 
-                // === 深蹲 ===
+                // ========================================================
+                // 深蹲 (Squat)
+                // ========================================================
                 } else if (currentPoseMode === 'squat') {
-                    const squatHipAngle = calculateAngle(shoulder, hip, knee);   
-                    const squatKneeAngle = calculateAngle(hip, knee, ankle);    
+                    const squatHipAngle = calculateAngle(shoulderR, hipR, kneeR);   
+                    const squatKneeAngle = calculateAngle(hipR, kneeR, ankleR);    
                     
-                    let squatStatus = "請開始深蹲"; let squatColor = "white";
+                    let squatStatus = "請開始深蹲";
+                    let squatColor = "white";
 
                     if (squatKneeAngle < 140) {
                         if (squatKneeAngle > 110) {
-                            squatStatus = "再蹲低一點！"; squatColor = "yellow"; 
+                            squatStatus = "再蹲低一點！";
+                            squatColor = "yellow"; 
                             speakHint("再蹲低一點"); 
                         } else if (squatHipAngle > 120) {
-                            squatStatus = "錯誤：屁股要翹高，身體不要太直！"; squatColor = "var(--error-color)";
+                            squatStatus = "錯誤：屁股要翹高，身體不要太直！";
+                            squatColor = "var(--error-color)";
                             speakHint("屁股要翹高，身體不要太直"); 
                         } else {
-                            squatStatus = "標準深蹲！繼續保持！"; squatColor = "var(--success-color)";
+                            squatStatus = "標準深蹲！繼續保持！";
+                            squatColor = "var(--success-color)";
                             speakHint("標準深蹲！繼續保持！"); 
                         }
                     }
 
                     if (squatColor === 'var(--error-color)') {
-                        squatStatusDiv.innerText = squatStatus; squatStatusDiv.style.color = squatColor;
-                        statusDisplay.classList.add('error'); statusDisplay.classList.remove('perfect');
-                        perfectStartTime = 0; hasSavedThisRep = false;
+                        squatStatusDiv.innerText = squatStatus;
+                        squatStatusDiv.style.color = squatColor;
+                        statusDisplay.classList.add('error');
+                        statusDisplay.classList.remove('perfect');
+                        perfectStartTime = 0;
+                        hasSavedThisRep = false;
                     } else if (squatColor === 'var(--success-color)') {
-                        statusDisplay.classList.remove('error'); statusDisplay.classList.add('perfect');
+                        statusDisplay.classList.remove('error');
+                        statusDisplay.classList.add('perfect');
                         
                         if (perfectStartTime === 0) perfectStartTime = Date.now();
                         const holdDuration = Date.now() - perfectStartTime;
@@ -628,21 +695,25 @@ function onResults(results) {
                             squatStatusDiv.style.color = squatColor;
                         }
                     } else {
-                        squatStatusDiv.innerText = squatStatus; squatStatusDiv.style.color = squatColor;
+                        squatStatusDiv.innerText = squatStatus;
+                        squatStatusDiv.style.color = squatColor;
                         statusDisplay.classList.remove('error', 'perfect');
-                        perfectStartTime = 0; hasSavedThisRep = false;
+                        perfectStartTime = 0;
+                        hasSavedThisRep = false;
                     }
 
-                // === 平舉 ===
+                // ========================================================
+                // 平舉 (Raise)
+                // ========================================================
                 } else if (currentPoseMode === 'Raise') {
                     const rules = YOGA_DATABASE[currentPoseMode];
                     let perfectCount = 0;
                     let errors = [];
 
                     rules.forEach(rule => {
-                        const p1 = results.poseLandmarks[rule.joints[0]];
-                        const p2 = results.poseLandmarks[rule.joints[1]];
-                        const p3 = results.poseLandmarks[rule.joints[2]];
+                        const p1 = lm[rule.joints[0]];
+                        const p2 = lm[rule.joints[1]];
+                        const p3 = lm[rule.joints[2]];
                         if(p1 && p2 && p3) {
                             const angle = calculateAngle(p1, p2, p3);
                             if (angle < rule.min || angle > rule.max) errors.push(rule.msg);
@@ -651,7 +722,8 @@ function onResults(results) {
                     });
 
                     if (perfectCount === rules.length) {
-                        statusDisplay.classList.add('perfect'); statusDisplay.classList.remove('error');
+                        statusDisplay.classList.add('perfect');
+                        statusDisplay.classList.remove('error');
                         
                         if (perfectStartTime === 0) perfectStartTime = Date.now();
                         const holdDuration = Date.now() - perfectStartTime;
@@ -666,8 +738,10 @@ function onResults(results) {
                         }
                     } else {
                         poseResultsDiv.innerHTML = errors.map(e => `<div style="color: var(--error-color); margin-bottom: 5px;">${e}</div>`).join('');
-                        statusDisplay.classList.add('error'); statusDisplay.classList.remove('perfect');
-                        perfectStartTime = 0; hasSavedThisRep = false;
+                        statusDisplay.classList.add('error');
+                        statusDisplay.classList.remove('perfect');
+                        perfectStartTime = 0;
+                        hasSavedThisRep = false;
 
                         if (errors.length > 0) speakHint(errors[0]); 
                     }
