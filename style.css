@@ -260,6 +260,30 @@ display: flex !important;
     background: #000;
 } */
 
+/* --- 解決雙鏡頭問題 --- */
+#video-container {
+    position: relative !important;
+    width: 640px !important;
+    height: 480px !important;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    background: #000;
+}
+
+#video { 
+    display: none !important; /* 🌟 絕對不能讓原鏡頭顯示出來 */
+}
+
+#canvas { 
+    position: absolute !important; /* 🌟 讓畫布貼齊容器 */
+    top: 0;
+    left: 0;
+    width: 100% !important; 
+    height: 100% !important; 
+    transform: scaleX(-1); /* 維持鏡像翻轉 */
+}
+
 /* 5. 中央鏡頭區塊 */
 .main-workout-area {
     display: flex;
