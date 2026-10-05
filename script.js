@@ -1,10 +1,14 @@
+// ==========================================
 // 🌟 1. 引入 Firebase SDK
+// ==========================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, addDoc, collection, query, orderBy, limit, getDocs, increment, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { getDatabase } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
+// ==========================================
 // 🌟 2. Firebase 配置 
+// ==========================================
 const firebaseConfig = {
     apiKey: "AIzaSyCstuIQhwz_Oxc6Q7T_9rbve8AcR6y276w",
     authDomain: "ourgoodgoodproject.firebaseapp.com",
@@ -21,7 +25,7 @@ const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
 // ==========================================
-// 1. 取得 HTML 元素
+// 3. 取得 HTML 元素
 // ==========================================
 const videoElement = document.getElementById('video');
 const canvasElement = document.getElementById('canvas');
@@ -51,8 +55,17 @@ const logoutBtn = document.getElementById('logout-btn');
 const userWelcome = document.getElementById('user-welcome');
 const userDisplay = document.getElementById('user-display');
 
+// 🌟 新增：教學彈窗相關元素
+const introModal = document.getElementById('intro-modal');
+const introTitle = document.getElementById('intro-title');
+const introVideo = document.getElementById('intro-video');
+const introImage = document.getElementById('intro-image');
+const introDesc = document.getElementById('intro-desc');
+const introTips = document.getElementById('intro-tips');
+const introStartBtn = document.getElementById('intro-start-btn');
+
 // ==========================================
-// 全域變數 & 瑜珈資料庫
+// 4. 全域變數 & 動作資料庫
 // ==========================================
 let currentPoseMode = 'tree'; 
 let currentUser = null; 
@@ -66,6 +79,34 @@ let currentRoutineIndex = 0;
 let isRoutineMode = false;   
 let isTransitioning = false; 
 
+// 🌟 新增：動作教學素材庫 (影片/圖片可替換為本機路徑或外部 URL)
+const POSE_GUIDES = {
+    'tree': {
+        title: "大樹式 (Tree Pose)",
+        type: "video",
+        src: "https://www.w3schools.com/html/mov_bbb.mp4", // 替換為你的影片路徑，如 "videos/tree.mp4"
+        desc: "大樹式能訓練下肢肌力與專注度，幫助平衡身心。",
+        tips: ["雙手平舉或合十並伸直手肘", "支撐腳踩穩，另一腳抬至大腿或小腿內側", "切勿將腳掌直接壓在膝關節上"]
+    },
+    'squat': {
+        title: "深蹲 (Squat)",
+        type: "image",
+        src: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?auto=format&fit=crop&w=600&q=80", // 替換為你的圖片路徑，如 "images/squat.jpg"
+        desc: "深蹲能強化臀腿肌群與核心穩定度。",
+        tips: ["雙腳與肩同寬，腳尖微外展", "臀部向後坐，下蹲時膝蓋不超過腳尖過多", "背部自然打直，胸口向前挺起"]
+    },
+    'Raise': {
+        title: "側平舉 (Lateral Raise)",
+        type: "video",
+        src: "https://www.w3schools.com/html/mov_bbb.mp4", // 替換為你的影片路徑，如 "videos/raise.mp4"
+        desc: "側平舉能增強肩膀三角肌與上肢控制力。",
+        tips: ["雙臂平舉與地面平行", "手臂全程伸直勿微彎", "放鬆頸部勿過度聳肩"]
+    }
+};
+
+let isIntroActive = false; // 是否正在觀看介紹 (觀看時暫停 AI 評分)
+let pendingPose = null;    // 即將進入的動作名稱
+
 const YOGA_DATABASE = {
     "Raise": [
         { name: "L_Arm", joints: [11, 13, 15], min: 150, max: 180, msg: "左手請伸直" },
@@ -74,7 +115,7 @@ const YOGA_DATABASE = {
 };
 
 // ==========================================
-// 🌟 Firebase 身份驗證邏輯
+// 🌟 5. Firebase 身份驗證邏輯
 // ==========================================
 onAuthStateChanged(auth, (user) => {
     if (user) {
@@ -108,7 +149,7 @@ if(logoutBtn) {
 }
 
 // ==========================================
-// 資料儲存與歷史紀錄系統
+// 6. 資料儲存與歷史紀錄系統
 // ==========================================
 async function saveDailyRecord(poseType, status) {
     if (!currentUser || !canSave) return;
@@ -143,20 +184,22 @@ const historyContainer = document.getElementById('history-container');
 let isHistoryVisible = false; 
 let myChart = null; 
 
-toggleHistoryBtn.addEventListener('click', () => {
-    isHistoryVisible = !isHistoryVisible; 
-    if (isHistoryVisible) {
-        historyContainer.style.display = 'block';
-        toggleHistoryBtn.innerText = '隱藏紀錄';
-        toggleHistoryBtn.style.backgroundColor = '#ff4757'; 
-        loadHistoryData(); 
-        historyContainer.scrollIntoView({ behavior: 'smooth' });
-    } else {
-        historyContainer.style.display = 'none';
-        toggleHistoryBtn.innerText = '查看歷史紀錄';
-        toggleHistoryBtn.style.backgroundColor = '#747d8c'; 
-    }
-});
+if (toggleHistoryBtn) {
+    toggleHistoryBtn.addEventListener('click', () => {
+        isHistoryVisible = !isHistoryVisible; 
+        if (isHistoryVisible) {
+            historyContainer.style.display = 'block';
+            toggleHistoryBtn.innerText = '隱藏紀錄';
+            toggleHistoryBtn.style.backgroundColor = '#ff4757'; 
+            loadHistoryData(); 
+            historyContainer.scrollIntoView({ behavior: 'smooth' });
+        } else {
+            historyContainer.style.display = 'none';
+            toggleHistoryBtn.innerText = '查看歷史紀錄';
+            toggleHistoryBtn.style.backgroundColor = '#747d8c'; 
+        }
+    });
+}
 
 async function loadHistoryData() {
     if (!currentUser) return;
@@ -189,14 +232,16 @@ async function loadHistoryData() {
 
         renderHistoryChart(dates.reverse(), scores.reverse());
         const listContainer = document.getElementById('history-list');
-        if(listItems.length > 0) {
+        if(listContainer && listItems.length > 0) {
             listContainer.innerHTML = listItems.join('');
         }
     } catch (e) { console.error("讀取紀錄失敗", e); }
 }
 
 function renderHistoryChart(labels, dataPoints) {
-    const ctx = document.getElementById('historyChart').getContext('2d');
+    const chartElem = document.getElementById('historyChart');
+    if (!chartElem) return;
+    const ctx = chartElem.getContext('2d');
     if (myChart) { myChart.destroy(); } 
     myChart = new Chart(ctx, {
         type: 'line',
@@ -216,7 +261,7 @@ function renderHistoryChart(labels, dataPoints) {
 }
 
 // ==========================================
-// 🌟 核心：集中處理動作成功與換場邏輯
+// 🌟 7. 集中處理動作成功與換場邏輯
 // ==========================================
 function handlePoseSuccess(poseNameChinese) {
     saveDailyRecord(poseNameChinese, 'Perfect'); 
@@ -234,21 +279,15 @@ function handlePoseSuccess(poseNameChinese) {
                 saveStatusDiv.innerHTML = `<span style="font-size: 18px;">🎉 完美！休息一下，<b>5秒</b>後進入：<b>${nextPoseName}</b></span>`;
                 saveStatusDiv.style.color = "#3498db";
             }
-            // 🌟 新增用語音：延遲 1.5 秒再唸，避免跟成功祝賀語音重疊
             setTimeout(() => {
                 speakHint(`完美！休息一下，5秒後進入${nextPoseName}`, 500);
             }, 1500);
 
             setTimeout(() => {
-                switchPose(nextPose);
+                isTransitioning = false;
+                // 連續挑戰時切換動作也自動彈出介紹
+                openPoseIntro(nextPose);
                 if(btnFlow) btnFlow.classList.add('active'); 
-                isTransitioning = false; 
-                if (saveStatusDiv) {
-                    saveStatusDiv.innerText = `👉 請開始動作：${nextPoseName}`;
-                    saveStatusDiv.style.color = "#f39c12";
-                }
-                // 🌟 新增用語音：休息結束，提示開始動作
-                speakHint(`請開始動作：${nextPoseName}`, 500);
             }, 5000);
             
         } else {
@@ -256,13 +295,12 @@ function handlePoseSuccess(poseNameChinese) {
                 saveStatusDiv.innerHTML = `🏆 <b>恭喜你！今日瑜珈挑戰全數完成！</b>`;
                 saveStatusDiv.style.color = "#ff4757";
             }
-            // 🌟 新增用語音：全部通關祝賀
             setTimeout(() => {
                 speakHint("恭喜你！今日瑜珈挑戰全數完成！你太棒了！", 500);
             }, 1500);
             isRoutineMode = false;
             isTransitioning = false;
-            if(btnFlow) btnFlow.classList.remove('active');
+            if(btnFlow) btnFlow.classList.remove('active'); 
             
             setTimeout(() => { if(!isHistoryVisible && toggleHistoryBtn) toggleHistoryBtn.click(); }, 2000); 
         }
@@ -275,8 +313,58 @@ function handlePoseSuccess(poseNameChinese) {
 }
 
 // ==========================================
-// 2. 綁定按鈕事件與切換邏輯
+// 🌟 8. 動作介紹彈窗與切換邏輯
 // ==========================================
+function openPoseIntro(poseKey) {
+    const guide = POSE_GUIDES[poseKey];
+    if (!guide || !introModal) {
+        switchPose(poseKey);
+        return;
+    }
+
+    pendingPose = poseKey;
+    isIntroActive = true;
+
+    if (introTitle) introTitle.innerText = guide.title;
+    if (introDesc) introDesc.innerText = guide.desc;
+    if (introTips) introTips.innerHTML = guide.tips.map(tip => `<li>${tip}</li>`).join('');
+
+    if (guide.type === 'video') {
+        if (introImage) introImage.style.display = 'none';
+        if (introVideo) {
+            introVideo.src = guide.src;
+            introVideo.style.display = 'block';
+            introVideo.currentTime = 0;
+            introVideo.play().catch(() => {});
+        }
+    } else {
+        if (introVideo) {
+            introVideo.pause();
+            introVideo.style.display = 'none';
+        }
+        if (introImage) {
+            introImage.src = guide.src;
+            introImage.style.display = 'block';
+        }
+    }
+
+    introModal.style.display = 'flex';
+}
+
+if (introStartBtn) {
+    introStartBtn.addEventListener('click', () => {
+        if (introModal) introModal.style.display = 'none';
+        if (introVideo) introVideo.pause();
+
+        isIntroActive = false;
+        if (pendingPose) {
+            switchPose(pendingPose);
+            const guide = POSE_GUIDES[pendingPose];
+            speakHint(`開始${guide ? guide.title : pendingPose}，請就定位`, 1000);
+        }
+    });
+}
+
 function switchPose(poseName) {
     currentPoseMode = poseName;
     canSave = true; 
@@ -286,58 +374,56 @@ function switchPose(poseName) {
     if (saveStatusDiv) saveStatusDiv.innerText = '';
 
     [btnTree, btnSquat, btnRaise].forEach(btn => btn?.classList.remove('active'));
-    if(btnFlow) btnFlow.classList.remove('active');
-    statusDisplay.classList.remove('error', 'perfect');
+    if(btnFlow && !isRoutineMode) btnFlow.classList.remove('active');
+    statusDisplay?.classList.remove('error', 'perfect');
 
     if (poseName === 'tree') {
         if(btnTree) btnTree.classList.add('active');
-        poseTitle.innerText = "大樹式偵測";
-        treeInfo.style.display = 'block';
-        squatInfo.style.display = 'none';
-        genericInfo.style.display = 'none';
+        if(poseTitle) poseTitle.innerText = "大樹式偵測";
+        if(treeInfo) treeInfo.style.display = 'block';
+        if(squatInfo) squatInfo.style.display = 'none';
+        if(genericInfo) genericInfo.style.display = 'none';
     } else if (poseName === 'squat') {
         if(btnSquat) btnSquat.classList.add('active');
-        poseTitle.innerText = "深蹲偵測";
-        treeInfo.style.display = 'none';
-        squatInfo.style.display = 'block';
-        genericInfo.style.display = 'none';
+        if(poseTitle) poseTitle.innerText = "深蹲偵測";
+        if(treeInfo) treeInfo.style.display = 'none';
+        if(squatInfo) squatInfo.style.display = 'block';
+        if(genericInfo) genericInfo.style.display = 'none';
     } else if (poseName === 'Raise') {
         if(btnRaise) btnRaise.classList.add('active');
-        poseTitle.innerText = "平舉偵測";
-        treeInfo.style.display = 'none';
-        squatInfo.style.display = 'none';
-        genericInfo.style.display = 'block';
+        if(poseTitle) poseTitle.innerText = "平舉偵測";
+        if(treeInfo) treeInfo.style.display = 'none';
+        if(squatInfo) squatInfo.style.display = 'none';
+        if(genericInfo) genericInfo.style.display = 'block';
     }
 }
 
-startBtn.addEventListener('click', startApp);
-
-btnTree?.addEventListener('click', () => { isRoutineMode = false; switchPose('tree'); });
-btnSquat?.addEventListener('click', () => { isRoutineMode = false; switchPose('squat'); });
-btnRaise?.addEventListener('click', () => { isRoutineMode = false; switchPose('Raise'); });
+// 綁定各動作按鈕：點擊後先開啟彈窗預覽
+btnTree?.addEventListener('click', () => { isRoutineMode = false; openPoseIntro('tree'); });
+btnSquat?.addEventListener('click', () => { isRoutineMode = false; openPoseIntro('squat'); });
+btnRaise?.addEventListener('click', () => { isRoutineMode = false; openPoseIntro('Raise'); });
 
 if (btnFlow) {
     btnFlow.addEventListener('click', () => {
         isRoutineMode = true;
         currentRoutineIndex = 0; 
-        isTransitioning = false;
-        
-        switchPose(yogaRoutine[currentRoutineIndex]); 
+        isTransitioning = false; 
         btnFlow.classList.add('active'); 
+        
+        openPoseIntro(yogaRoutine[currentRoutineIndex]); 
         
         setTimeout(() => {
             if (saveStatusDiv) {
                 saveStatusDiv.innerText = "🧘‍♀️ 瑜珈挑戰開始！請準備第一個動作";
                 saveStatusDiv.style.color = "#f39c12";
             }
-            // 🌟 新增用語音：宣告挑戰開始
             speakHint("瑜珈挑戰開始！請準備第一個動作", 500);
         }, 100);
     });
 }
 
 // ==========================================
-// 3. 核心功能函式與語音
+// 9. 核心功能函式與語音
 // ==========================================
 function calculateAngle(a, b, c) {
     let radians = Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(a.y - b.y, a.x - b.x);
@@ -349,13 +435,16 @@ function calculateAngle(a, b, c) {
 function startApp() {
     const landingPage = document.getElementById('landing-page');
     const mainApp = document.getElementById('main-app');
-    landingPage.style.opacity = '0';
+    if (landingPage) landingPage.style.opacity = '0';
     setTimeout(() => {
-        landingPage.style.display = 'none';
-        mainApp.style.display = 'flex';
+        if (landingPage) landingPage.style.display = 'none';
+        if (mainApp) mainApp.style.display = 'flex';
         camera.start(); 
+        // 進入主畫面後，先預設展示大樹式引導
+        openPoseIntro('tree');
     }, 500);
 }
+startBtn?.addEventListener('click', startApp);
 
 let lastSpeakTime = 0; 
 function speakHint(text, cooldown = 3000) {
@@ -372,16 +461,26 @@ function speakHint(text, cooldown = 3000) {
 }
 
 // ==========================================
-// 4. AI 偵測邏輯
+// 🌟 10. AI 偵測邏輯 (加入彈窗中的暫停防護)
 // ==========================================
 function onResults(results) {
-    if (loadingDiv.style.display !== 'none') {
+    if (loadingDiv && loadingDiv.style.display !== 'none') {
         loadingDiv.style.display = 'none';
     }
 
     canvasCtx.save();
     canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
     canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+
+    // 🌟 若正處於教學彈窗觀看中，僅顯示灰色背景輔助骨架，不執行動作評分
+    if (isIntroActive) {
+        if (results.poseLandmarks) {
+            drawConnectors(canvasCtx, results.poseLandmarks, POSE_CONNECTIONS, {color: '#7f8c8d', lineWidth: 2});
+            drawLandmarks(canvasCtx, results.poseLandmarks, {color: '#bdc3c7', lineWidth: 1});
+        }
+        canvasCtx.restore();
+        return; 
+    }
 
     if (results.poseLandmarks) {
         if (isTransitioning) {
@@ -402,7 +501,7 @@ function onResults(results) {
             if (shoulder && elbow && wrist && hip && knee && ankle) {
                 const elbowAngle = calculateAngle(shoulder, elbow, wrist); 
                 const shoulderAngle = calculateAngle(hip, shoulder, elbow); 
-                const kneeAngle = calculateAngle(hip, knee, ankle);        
+                const kneeAngle = calculateAngle(hip, knee, ankle);         
                 const legAngle = calculateAngle(shoulder, hip, knee);      
 
                 // === 大樹式 ===
@@ -536,7 +635,7 @@ function onResults(results) {
 }
 
 // ==========================================
-// 5. 初始化 MediaPipe 與相機
+// 11. 初始化 MediaPipe 與相機
 // ==========================================
 const pose = new Pose({locateFile: (file) => {
     return `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`;
@@ -550,7 +649,7 @@ const camera = new Camera(videoElement, {
 });
 
 // ==========================================
-// 🏆 排行榜系統
+// 12. 排行榜系統
 // ==========================================
 async function uploadScore(points) {
     if (!currentUser) return;
@@ -615,7 +714,7 @@ async function loadLeaderboard() {
 }
 
 // ==========================================
-// 👤 個人中心與數據視覺化系統 (改為底部展開面板)
+// 13. 個人中心與數據視覺化系統
 // ==========================================
 const btnProfile = document.getElementById('btn-profile');
 const profileContainer = document.getElementById('profile-container');
@@ -640,17 +739,14 @@ if (btnProfile) {
         isProfileVisible = !isProfileVisible;
         
         if (isProfileVisible) {
-            // 顯示介面
             profileContainer.style.display = 'block';
             btnProfile.innerText = '隱藏個人中心';
             btnProfile.style.backgroundColor = '#ff4757';
             profileContainer.scrollIntoView({ behavior: 'smooth' });
             
-            // 1. 載入基本資料
             profileName.innerText = currentUser.displayName || '瑜珈達人';
             profileAvatar.src = currentUser.photoURL || 'https://via.placeholder.com/80?text=User';
 
-            // 2. 讀取積分與段位
             try {
                 const userLeaderboardRef = doc(db, "leaderboard", currentUser.uid);
                 const docSnap = await getDoc(userLeaderboardRef);
@@ -679,7 +775,6 @@ if (btnProfile) {
                 }
             } catch (e) { console.error("讀取積分失敗", e); }
 
-            // 3. 讀取歷史分析
             try {
                 const historyRef = collection(db, "users", currentUser.uid, "history");
                 const querySnapshot = await getDocs(historyRef);
@@ -703,7 +798,6 @@ if (btnProfile) {
             } catch (e) { console.error("讀取歷史分析失敗", e); }
             
         } else {
-            // 隱藏介面
             profileContainer.style.display = 'none';
             btnProfile.innerText = '👤 個人中心';
             btnProfile.style.backgroundColor = '#9b59b6';
@@ -712,7 +806,9 @@ if (btnProfile) {
 }
 
 function drawPreferenceChart(dataPoints) {
-    const ctx = document.getElementById('posePreferenceChart').getContext('2d');
+    const chartElem = document.getElementById('posePreferenceChart');
+    if (!chartElem) return;
+    const ctx = chartElem.getContext('2d');
     if (preferenceChart) { preferenceChart.destroy(); } 
     
     const isDataEmpty = dataPoints.every(val => val === 0);
