@@ -552,22 +552,22 @@ function onResults(results) {
                 if (currentPoseMode === 'tree') {
                     let isArmError = false; let isLegError = false;
 
-                    if (elbowAngle < 160) {
+                    if (elbowAngle < 110) { //160
                         armStatusDiv.innerText = "錯誤：手肘彎曲了！請伸直。"; armStatusDiv.style.color = "var(--error-color)"; isArmError = true;
-                    } else if (shoulderAngle < 75) {
+                    } else if (shoulderAngle < 120) {  //75
                         armStatusDiv.innerText = "錯誤：手臂掉下來了！請抬高。"; armStatusDiv.style.color = "var(--error-color)"; isArmError = true;
-                    } else if (shoulderAngle > 105) {
+                    } else if (shoulderAngle > 175) { //105
                         armStatusDiv.innerText = "錯誤：手臂舉太高了！請放平。"; armStatusDiv.style.color = "var(--error-color)"; isArmError = true;
                     } else {
                         armStatusDiv.innerText = "手臂 PERFECT！"; armStatusDiv.style.color = "var(--success-color)";
                     }
 
-                    if (legAngle > 110) {
+                    if (legAngle > 90) { //110
                         legStatusDiv.innerText = "錯誤：再抬高腿！"; legStatusDiv.style.color = "var(--error-color)"; isLegError = true;
-                    } else if (legAngle < 75) {
+                    } else if (legAngle < 75) { //75
                         legStatusDiv.innerText = "錯誤：腳低一點！"; legStatusDiv.style.color = "var(--error-color)"; isLegError = true;
-                    } else if (kneeAngle < 160) {
-                        legStatusDiv.innerText = "錯誤：請把腳伸直！"; legStatusDiv.style.color = "var(--error-color)"; isLegError = true;
+                    } else if (kneeAngle > 85) { //<160
+                        legStatusDiv.innerText = "錯誤：請把腳彎曲！"; legStatusDiv.style.color = "var(--error-color)"; isLegError = true;
                     } else {
                         legStatusDiv.innerText = "完美抬腿！"; legStatusDiv.style.color = "var(--success-color)";
                     }
