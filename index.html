@@ -81,9 +81,12 @@
             <button id="toggle-leaderboard-btn" class="menu-btn" style="background-color: #f39c12; color: white; margin-left: 10px;">🏆 查看全球排行榜</button>
         </div>
 
-        <!-- 個人中心顯示區塊 -->
+        <!-- 🌟 個人中心顯示區塊 (豐滿加強版) -->
         <div id="profile-container" style="display: none; background: rgba(255,255,255,0.9); padding: 20px; border-radius: 15px; margin-top: 20px; width: 640px; color: #333; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            
             <h2 style="text-align: center; margin-bottom: 20px; color: #9b59b6;">👤 我的瑜珈專屬檔案</h2>
+
+            <!-- 個人資訊卡片 -->
             <div style="display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #a29bfe, #6c5ce7); padding: 25px; border-radius: 15px; color: white; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
                 <img id="profile-avatar" src="" alt="Avatar" style="width: 90px; height: 90px; border-radius: 50%; border: 4px solid white; object-fit: cover; background: #ddd; margin-right: 25px;">
                 <div style="text-align: left;">
@@ -91,6 +94,8 @@
                     <span id="profile-rank" style="background: #f1c40f; color: #d35400; padding: 6px 18px; border-radius: 20px; font-size: 14px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">判定中...</span>
                 </div>
             </div>
+
+            <!-- 數據統計卡片 -->
             <div style="display: flex; justify-content: space-between; text-align: center; margin-bottom: 20px;">
                 <div style="flex: 1; background: white; padding: 20px 10px; margin: 0 5px; border-radius: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
                     <div style="font-size: 14px; color: #7f8c8d; margin-bottom: 5px;">累積積分</div>
@@ -105,12 +110,15 @@
                     <div id="profile-perfect-count" style="font-size: 28px; font-weight: bold; color: #2ecc71;">0</div>
                 </div>
             </div>
+
+            <!-- 圖表卡片 -->
             <div style="background: white; padding: 25px; border-radius: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
                 <h3 style="font-size: 18px; color: #34495e; text-align: center; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 20px;">📊 動作偏好與熟練度分析</h3>
                 <div style="width: 100%; max-width: 300px; height: 300px; margin: 0 auto;">
                     <canvas id="posePreferenceChart"></canvas>
                 </div>
             </div>
+            
         </div>
 
         <!-- 歷史紀錄顯示區塊 -->
@@ -131,57 +139,23 @@
             </ul>
         </div>
 
+        <!-- 我加教學彈窗結構在這 -->
         <!-- 🌟 動作介紹引導彈窗 (Intro Modal) -->
         <div id="intro-modal" class="modal-overlay" style="display: none;">
             <div class="modal-card">
                 <h2 id="intro-title">動作名稱</h2>
+                
+                <!-- 動態容器：支援影片或照片 -->
                 <div id="intro-media-wrapper">
                     <video id="intro-video" autoplay loop muted playsinline style="display: none;"></video>
                     <img id="intro-image" alt="Pose Demonstration" style="display: none;">
                 </div>
+        
                 <p id="intro-desc">動作描述與注意事項載入中...</p>
+                
                 <ul id="intro-tips" class="intro-tips-list"></ul>
+        
                 <button id="intro-start-btn" class="start-btn" style="margin-top: 15px;">我準備好了，開始檢測！</button>
-            </div>
-        </div>
-
-        <!-- 🌟 (圖三) 3秒倒數遮罩 -->
-        <div id="countdown-overlay" style="display: none;">
-            <div id="countdown-number">3</div>
-            <div style="color: white; font-size: 24px; margin-top: 30px; letter-spacing: 2px;">準備開始</div>
-        </div>
-
-        <!-- 🌟 (圖四) 結算畫面 -->
-        <div id="summary-screen" style="display: none;">
-            <div class="summary-content">
-                <h1 style="color: #2c3e50; margin: 0 0 10px 0;">🏅 恭喜</h1>
-                <p style="color: #7f8c8d; margin-bottom: 30px;">你已完成此練習，再接再厲哦！</p>
-                
-                <div class="summary-stats-card">
-                    <h3 style="color: #7f8c8d; font-size: 16px; margin: 0 0 10px 0; font-weight: normal;">你已連續練習</h3>
-                    <div style="font-size: 48px; font-weight: bold; color: #2c3e50; margin-bottom: 25px;">
-                        <span id="summary-days">1</span><span style="font-size: 20px; font-weight: normal;"> 天</span>
-                    </div>
-                    
-                    <hr style="border: 0; border-top: 1px solid #eee; margin-bottom: 25px;">
-                    
-                    <div style="display: flex; justify-content: space-between; text-align: left;">
-                        <div>
-                            <div style="color: #7f8c8d; font-size: 13px; margin-bottom: 5px;">🧘 練習動作</div>
-                            <div style="font-size: 22px; font-weight: bold; color: #2c3e50;"><span id="summary-actions">0</span> <span style="font-size: 14px; font-weight: normal;">個</span></div>
-                        </div>
-                        <div>
-                            <div style="color: #7f8c8d; font-size: 13px; margin-bottom: 5px;">⏳ 練習時長</div>
-                            <div style="font-size: 22px; font-weight: bold; color: #2c3e50;"><span id="summary-time">0</span> <span style="font-size: 14px; font-weight: normal;">分鐘</span></div>
-                        </div>
-                        <div>
-                            <div style="color: #7f8c8d; font-size: 13px; margin-bottom: 5px;">🔥 預估消耗</div>
-                            <div style="font-size: 22px; font-weight: bold; color: #2c3e50;"><span id="summary-cal">0</span> <span style="font-size: 14px; font-weight: normal;">千卡</span></div>
-                        </div>
-                    </div>
-                </div>
-                
-                <button id="summary-close-btn" class="start-btn" style="width: 100%; max-width: 400px; background: #34495e;">分享練習成就並返回</button>
             </div>
         </div>
         
