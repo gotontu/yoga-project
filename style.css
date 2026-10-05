@@ -230,3 +230,128 @@ body {
 
 .countdown-bounce { font-size: 9rem; font-weight: 900; color: var(--primary-color); animation: bounce 1s infinite; }
 @keyframes bounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+
+/* =========================================
+   🌟 訓練偵測室 (新版大字體與側邊欄排版)
+   ========================================= */
+#workout-view {
+    display: none; /* JS 控制 flex */
+    width: 100vw;
+    height: 100vh;
+    background-color: #fdf6ef; /* 淺米色背景 */
+    color: #333;
+    box-sizing: border-box;
+    padding: 20px;
+    gap: 20px;
+    position: fixed;
+    top: 0; left: 0;
+    z-index: 200;
+}
+
+/* 左側控制面板 */
+.workout-sidebar {
+    width: 280px;
+    background-color: #fdf6ef;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    height: 100%;
+}
+
+.sidebar-title {
+    font-size: 26px;
+    font-weight: 900;
+    margin: 0;
+    color: #333;
+}
+
+.sidebar-search {
+    background: white;
+    padding: 12px 20px;
+    border-radius: 25px;
+    border: 2px solid #ddd;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.search-icon { font-size: 18px; color: #3498db; }
+.search-text { font-size: 18px; font-weight: bold; color: #333; }
+
+.sidebar-controls { display: flex; gap: 10px; }
+.action-btn {
+    flex: 1; background-color: #a0522d; color: white;
+    border: none; padding: 12px 0; border-radius: 10px;
+    font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.2s;
+}
+.action-btn:hover { background-color: #8a4322; }
+
+.status-indicator {
+    background-color: #1b4332; color: white;
+    padding: 18px; border-radius: 12px; font-weight: bold;
+    text-align: center; font-size: 20px; transition: 0.3s;
+}
+
+.timer-box {
+    background: white; border-radius: 15px; padding: 25px;
+    text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+.timer-title { font-size: 20px; font-weight: bold; color: #a0522d; margin-bottom: 5px; }
+.timer-number { font-size: 100px; font-weight: 900; color: #1b4332; line-height: 1; }
+
+.sidebar-footer { margin-top: auto; }
+.sidebar-btn {
+    background: #333; color: white; border: none; padding: 15px;
+    border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer;
+}
+
+/* 右側攝影機與巨大文字區 */
+.workout-main {
+    flex: 1;
+    border: 3px solid #e74c3c;
+    border-radius: 15px;
+    display: flex;
+    flex-direction: column;
+    background: white;
+    overflow: hidden;
+}
+
+.video-header {
+    background: #fdf6ef; padding: 8px 15px; font-size: 14px;
+    font-weight: bold; color: #555; border-bottom: 3px solid #e74c3c;
+}
+
+#video-container {
+    flex: 1; position: relative; background: #000; min-height: 50vh;
+}
+#video, #canvas {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%; object-fit: contain; 
+}
+
+#huge-prompt-container {
+    background-color: #ffe4e1;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    border-top: 3px solid #e74c3c;
+    transition: 0.3s;
+}
+
+.prompt-badges { display: flex; gap: 15px; }
+.prompt-badges span {
+    background: white; padding: 10px 40px; border-radius: 40px;
+    font-size: 38px; font-weight: 900; border: 2px solid;
+}
+.badge-blue { color: #2980b9; border-color: #2980b9; }
+.badge-red { color: #c0392b; border-color: #c0392b; }
+.badge-green { color: #27ae60; border-color: #27ae60; }
+.badge-gray { color: #7f8c8d; border-color: #7f8c8d; }
+
+.prompt-message-blue, .prompt-message-green, .prompt-message-gray {
+    font-size: 32px; font-weight: bold; padding: 12px 50px; border-radius: 10px;
+}
+.prompt-message-blue { background: #d4e6f1; color: #2980b9; }
+.prompt-message-green { background: #d5f5e3; color: #27ae60; }
+.prompt-message-gray { background: #f2f3f4; color: #7f8c8d; }
