@@ -1,841 +1,196 @@
-// ==========================================
-// 🌟 1. 引入 Firebase SDK
-// ==========================================
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, addDoc, collection, query, orderBy, limit, getDocs, increment, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { getDatabase } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-
-// ==========================================
-// 🌟 2. Firebase 配置 
-// ==========================================
-const firebaseConfig = {
-    apiKey: "AIzaSyCstuIQhwz_Oxc6Q7T_9rbve8AcR6y276w",
-    authDomain: "ourgoodgoodproject.firebaseapp.com",
-    projectId: "ourgoodgoodproject",
-    storageBucket: "ourgoodgoodproject.firebasestorage.app",
-    messagingSenderId: "174602665216",
-    appId: "1:174602665216:web:335339073c8d5a00efc7e5",
-    measurementId: "G-2Y3VQZJRCC"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const provider = new GoogleAuthProvider();
-
-// ==========================================
-// 3. 取得 HTML 元素
-// ==========================================
-const videoElement = document.getElementById('video');
-const canvasElement = document.getElementById('canvas');
-const canvasCtx = canvasElement.getContext('2d');
-const loadingDiv = document.getElementById('loading');
-
-const statusDisplay = document.getElementById('status-display');
-const poseTitle = document.getElementById('pose-title');
-
-const treeInfo = document.getElementById('tree-info');
-const squatInfo = document.getElementById('squat-info');
-const genericInfo = document.getElementById('generic-info');
-
-const armStatusDiv = document.getElementById('arm-status');
-const legStatusDiv = document.getElementById('leg-status');
-const squatStatusDiv = document.getElementById('squat-status');
-const poseResultsDiv = document.getElementById('pose-results');
-const saveStatusDiv = document.getElementById('save-status');
-
-const btnTree = document.getElementById('btn-tree');
-const btnSquat = document.getElementById('btn-squat');
-const btnRaise = document.getElementById('btn-raise');
-const btnFlow = document.getElementById('btn-flow'); 
-const startBtn = document.getElementById('start-btn');
-const loginBtn = document.getElementById('login-btn'); 
-const logoutBtn = document.getElementById('logout-btn');
-const userWelcome = document.getElementById('user-welcome');
-const userDisplay = document.getElementById('user-display');
-
-// 🌟 新增：教學彈窗相關元素
-const introModal = document.getElementById('intro-modal');
-const introTitle = document.getElementById('intro-title');
-const introVideo = document.getElementById('intro-video');
-const introImage = document.getElementById('intro-image');
-const introDesc = document.getElementById('intro-desc');
-const introTips = document.getElementById('intro-tips');
-const introStartBtn = document.getElementById('intro-start-btn');
-
-// ==========================================
-// 4. 全域變數 & 動作資料庫
-// ==========================================
-let currentPoseMode = 'tree'; 
-let currentUser = null; 
-let canSave = true; 
-
-let perfectStartTime = 0;   
-let hasSavedThisRep = false;
-
-const yogaRoutine = ['tree', 'squat', 'Raise']; 
-let currentRoutineIndex = 0; 
-let isRoutineMode = false;   
-let isTransitioning = false; 
-
-// 🌟 新增：動作教學素材庫 (影片/圖片可替換為本機路徑或外部 URL)
-const POSE_GUIDES = {
-    'tree': {
-        title: "大樹式 (Tree Pose)",
-        type: "video",
-        src: "https://www.w3schools.com/html/mov_bbb.mp4", // 替換為你的影片路徑，如 "videos/tree.mp4"
-        desc: "大樹式能訓練下肢肌力與專注度，幫助平衡身心。",
-        tips: ["雙手平舉或合十並伸直手肘", "支撐腳踩穩，另一腳抬至大腿或小腿內側", "切勿將腳掌直接壓在膝關節上"]
-    },
-    'squat': {
-        title: "深蹲 (Squat)",
-        type: "image",
-        src: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?auto=format&fit=crop&w=600&q=80", // 替換為你的圖片路徑，如 "images/squat.jpg"
-        desc: "深蹲能強化臀腿肌群與核心穩定度。",
-        tips: ["雙腳與肩同寬，腳尖微外展", "臀部向後坐，下蹲時膝蓋不超過腳尖過多", "背部自然打直，胸口向前挺起"]
-    },
-    'Raise': {
-        title: "側平舉 (Lateral Raise)",
-        type: "video",
-        src: "https://www.w3schools.com/html/mov_bbb.mp4", // 替換為你的影片路徑，如 "videos/raise.mp4"
-        desc: "側平舉能增強肩膀三角肌與上肢控制力。",
-        tips: ["雙臂平舉與地面平行", "手臂全程伸直勿微彎", "放鬆頸部勿過度聳肩"]
-    }
-};
-
-let isIntroActive = false; // 是否正在觀看介紹 (觀看時暫停 AI 評分)
-let pendingPose = null;    // 即將進入的動作名稱
-
-const YOGA_DATABASE = {
-    "Raise": [
-        { name: "L_Arm", joints: [11, 13, 15], min: 150, max: 180, msg: "左手請伸直" },
-        { name: "R_Arm", joints: [12, 14, 16], min: 150, max: 180, msg: "右手請伸直" }
-    ]
-};
-
-// ==========================================
-// 🌟 5. Firebase 身份驗證邏輯
-// ==========================================
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        currentUser = user;
-        if(loginBtn) loginBtn.style.display = 'none';
-        if(startBtn) startBtn.style.display = 'block';
-        if(userWelcome) userWelcome.innerText = `準備好了嗎，${user.displayName}？`;
-        if(userDisplay) userDisplay.innerText = `使用者：${user.displayName}`; 
-    } else {
-        currentUser = null;
-        if(loginBtn) loginBtn.style.display = 'block';
-        if(startBtn) startBtn.style.display = 'none';
-        if(userWelcome) userWelcome.innerText = "請先登入以記錄你的練習";
-        
-        document.getElementById('landing-page').style.display = 'flex';
-        document.getElementById('landing-page').style.opacity = '1';
-        document.getElementById('main-app').style.display = 'none';
-    }
-});
-
-if(loginBtn) {
-    loginBtn.addEventListener('click', () => {
-        signInWithPopup(auth, provider).catch((err) => console.error("登入失敗", err));
-    });
-}
-
-if(logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
-        signOut(auth);
-    });
-}
-
-// ==========================================
-// 6. 資料儲存與歷史紀錄系統
-// ==========================================
-async function saveDailyRecord(poseType, status) {
-    if (!currentUser || !canSave) return;
-    canSave = false; 
-
-    const today = new Date().toLocaleDateString('zh-TW').replace(/\//g, '-');
-    const historyCol = collection(db, "users", currentUser.uid, "history");
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI Yoga Master - 智能瑜伽綜合版</title>
     
-    try {
-        await addDoc(historyCol, {
-            date: today,
-            lastPose: poseType,
-            status: status,
-            timestamp: new Date()
-        });
-        
-        if(saveStatusDiv && !isRoutineMode) saveStatusDiv.innerText = `✅ ${poseType} 已自動存檔 (${new Date().toLocaleTimeString()})`;
-        
-        loadHistoryData(); 
-        uploadScore(10); 
-
-        setTimeout(() => { 
-            canSave = true; 
-            if(saveStatusDiv && !isTransitioning && !isRoutineMode) saveStatusDiv.innerText = ''; 
-        }, 5000); 
-
-    } catch (e) { console.error("雲端存檔失敗", e); }
-}
-
-const toggleHistoryBtn = document.getElementById('toggle-history-btn');
-const historyContainer = document.getElementById('history-container');
-let isHistoryVisible = false; 
-let myChart = null; 
-
-if (toggleHistoryBtn) {
-    toggleHistoryBtn.addEventListener('click', () => {
-        isHistoryVisible = !isHistoryVisible; 
-        if (isHistoryVisible) {
-            historyContainer.style.display = 'block';
-            toggleHistoryBtn.innerText = '隱藏紀錄';
-            toggleHistoryBtn.style.backgroundColor = '#ff4757'; 
-            loadHistoryData(); 
-            historyContainer.scrollIntoView({ behavior: 'smooth' });
-        } else {
-            historyContainer.style.display = 'none';
-            toggleHistoryBtn.innerText = '查看歷史紀錄';
-            toggleHistoryBtn.style.backgroundColor = '#747d8c'; 
-        }
-    });
-}
-
-async function loadHistoryData() {
-    if (!currentUser) return;
-    const historyRef = collection(db, "users", currentUser.uid, "history");
-    const q = query(historyRef, orderBy("timestamp", "desc"), limit(7));
-
-    try {
-        const querySnapshot = await getDocs(q);
-        const dates = [];
-        const scores = [];
-        const listItems = [];
-
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            dates.push(data.date);
-            scores.push(data.status === 'Perfect' ? 100 : 50);
-        
-            let timeString = "";
-            if (data.timestamp) {
-                const dateObj = data.timestamp.toDate ? data.timestamp.toDate() : new Date(data.timestamp);
-                timeString = dateObj.toLocaleTimeString('zh-TW', { hour12: false }); 
-            }
-        
-            listItems.push(`<li style="padding: 8px 0; border-bottom: 1px solid #eee;">
-                📅 ${data.date} 
-                <span style="color: #747d8c; font-size: 0.85em; margin: 0 5px;">[${timeString}]</span> 
-                - ${data.lastPose}: <strong style="color: var(--success-color);">${data.status}</strong>
-            </li>`);
-        });
-
-        renderHistoryChart(dates.reverse(), scores.reverse());
-        const listContainer = document.getElementById('history-list');
-        if(listContainer && listItems.length > 0) {
-            listContainer.innerHTML = listItems.join('');
-        }
-    } catch (e) { console.error("讀取紀錄失敗", e); }
-}
-
-function renderHistoryChart(labels, dataPoints) {
-    const chartElem = document.getElementById('historyChart');
-    if (!chartElem) return;
-    const ctx = chartElem.getContext('2d');
-    if (myChart) { myChart.destroy(); } 
-    myChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: '練習品質 (100=完美)',
-                data: dataPoints,
-                borderColor: '#4e73df',
-                backgroundColor: 'rgba(78, 115, 223, 0.1)',
-                tension: 0.3,
-                fill: true
-            }]
-        },
-        options: { scales: { y: { min: 0, max: 100 } } }
-    });
-}
-
-// ==========================================
-// 🌟 7. 集中處理動作成功與換場邏輯
-// ==========================================
-function handlePoseSuccess(poseNameChinese) {
-    saveDailyRecord(poseNameChinese, 'Perfect'); 
-    hasSavedThisRep = true;
-
-    if (isRoutineMode) {
-        isTransitioning = true; 
-        currentRoutineIndex++;
-        
-        if (currentRoutineIndex < yogaRoutine.length) {
-            let nextPose = yogaRoutine[currentRoutineIndex];
-            let nextPoseName = nextPose === 'tree' ? '大樹式' : (nextPose === 'squat' ? '深蹲' : '平舉');
-            
-            if (saveStatusDiv) {
-                saveStatusDiv.innerHTML = `<span style="font-size: 18px;">🎉 完美！休息一下，<b>5秒</b>後進入：<b>${nextPoseName}</b></span>`;
-                saveStatusDiv.style.color = "#3498db";
-            }
-            setTimeout(() => {
-                speakHint(`完美！休息一下，5秒後進入${nextPoseName}`, 500);
-            }, 1500);
-
-            setTimeout(() => {
-                isTransitioning = false;
-                // 連續挑戰時切換動作也自動彈出介紹
-                openPoseIntro(nextPose);
-                if(btnFlow) btnFlow.classList.add('active'); 
-            }, 5000);
-            
-        } else {
-            if (saveStatusDiv) {
-                saveStatusDiv.innerHTML = `🏆 <b>恭喜你！今日瑜珈挑戰全數完成！</b>`;
-                saveStatusDiv.style.color = "#ff4757";
-            }
-            setTimeout(() => {
-                speakHint("恭喜你！今日瑜珈挑戰全數完成！你太棒了！", 500);
-            }, 1500);
-            isRoutineMode = false;
-            isTransitioning = false;
-            if(btnFlow) btnFlow.classList.remove('active'); 
-            
-            setTimeout(() => { if(!isHistoryVisible && toggleHistoryBtn) toggleHistoryBtn.click(); }, 2000); 
-        }
-    } else {
-        if (saveStatusDiv) {
-            saveStatusDiv.innerText = `🌟 完美${poseNameChinese}！已記錄！`;
-            saveStatusDiv.style.color = "var(--success-color)";
-        }
-    }
-}
-
-// ==========================================
-// 🌟 8. 動作介紹彈窗與切換邏輯
-// ==========================================
-function openPoseIntro(poseKey) {
-    const guide = POSE_GUIDES[poseKey];
-    if (!guide || !introModal) {
-        switchPose(poseKey);
-        return;
-    }
-
-    pendingPose = poseKey;
-    isIntroActive = true;
-
-    if (introTitle) introTitle.innerText = guide.title;
-    if (introDesc) introDesc.innerText = guide.desc;
-    if (introTips) introTips.innerHTML = guide.tips.map(tip => `<li>${tip}</li>`).join('');
-
-    if (guide.type === 'video') {
-        if (introImage) introImage.style.display = 'none';
-        if (introVideo) {
-            introVideo.src = guide.src;
-            introVideo.style.display = 'block';
-            introVideo.currentTime = 0;
-            introVideo.play().catch(() => {});
-        }
-    } else {
-        if (introVideo) {
-            introVideo.pause();
-            introVideo.style.display = 'none';
-        }
-        if (introImage) {
-            introImage.src = guide.src;
-            introImage.style.display = 'block';
-        }
-    }
-
-    introModal.style.display = 'flex';
-}
-
-if (introStartBtn) {
-    introStartBtn.addEventListener('click', () => {
-        if (introModal) introModal.style.display = 'none';
-        if (introVideo) introVideo.pause();
-
-        isIntroActive = false;
-        if (pendingPose) {
-            switchPose(pendingPose);
-            const guide = POSE_GUIDES[pendingPose];
-            speakHint(`開始${guide ? guide.title : pendingPose}，請就定位`, 1000);
-        }
-    });
-}
-
-function switchPose(poseName) {
-    currentPoseMode = poseName;
-    canSave = true; 
-    perfectStartTime = 0;
-    hasSavedThisRep = false;
-
-    if (saveStatusDiv) saveStatusDiv.innerText = '';
-
-    [btnTree, btnSquat, btnRaise].forEach(btn => btn?.classList.remove('active'));
-    if(btnFlow && !isRoutineMode) btnFlow.classList.remove('active');
-    statusDisplay?.classList.remove('error', 'perfect');
-
-    if (poseName === 'tree') {
-        if(btnTree) btnTree.classList.add('active');
-        if(poseTitle) poseTitle.innerText = "大樹式偵測";
-        if(treeInfo) treeInfo.style.display = 'block';
-        if(squatInfo) squatInfo.style.display = 'none';
-        if(genericInfo) genericInfo.style.display = 'none';
-    } else if (poseName === 'squat') {
-        if(btnSquat) btnSquat.classList.add('active');
-        if(poseTitle) poseTitle.innerText = "深蹲偵測";
-        if(treeInfo) treeInfo.style.display = 'none';
-        if(squatInfo) squatInfo.style.display = 'block';
-        if(genericInfo) genericInfo.style.display = 'none';
-    } else if (poseName === 'Raise') {
-        if(btnRaise) btnRaise.classList.add('active');
-        if(poseTitle) poseTitle.innerText = "平舉偵測";
-        if(treeInfo) treeInfo.style.display = 'none';
-        if(squatInfo) squatInfo.style.display = 'none';
-        if(genericInfo) genericInfo.style.display = 'block';
-    }
-}
-
-// 綁定各動作按鈕：點擊後先開啟彈窗預覽
-btnTree?.addEventListener('click', () => { isRoutineMode = false; openPoseIntro('tree'); });
-btnSquat?.addEventListener('click', () => { isRoutineMode = false; openPoseIntro('squat'); });
-btnRaise?.addEventListener('click', () => { isRoutineMode = false; openPoseIntro('Raise'); });
-
-if (btnFlow) {
-    btnFlow.addEventListener('click', () => {
-        isRoutineMode = true;
-        currentRoutineIndex = 0; 
-        isTransitioning = false; 
-        btnFlow.classList.add('active'); 
-        
-        openPoseIntro(yogaRoutine[currentRoutineIndex]); 
-        
-        setTimeout(() => {
-            if (saveStatusDiv) {
-                saveStatusDiv.innerText = "🧘‍♀️ 瑜珈挑戰開始！請準備第一個動作";
-                saveStatusDiv.style.color = "#f39c12";
-            }
-            speakHint("瑜珈挑戰開始！請準備第一個動作", 500);
-        }, 100);
-    });
-}
-
-// ==========================================
-// 9. 核心功能函式與語音
-// ==========================================
-function calculateAngle(a, b, c) {
-    let radians = Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(a.y - b.y, a.x - b.x);
-    let angle = Math.abs(radians * 180.0 / Math.PI);
-    if (angle > 180.0) angle = 360 - angle;
-    return angle;
-}
-
-function startApp() {
-    const landingPage = document.getElementById('landing-page');
-    const mainApp = document.getElementById('main-app');
-    if (landingPage) landingPage.style.opacity = '0';
-    setTimeout(() => {
-        if (landingPage) landingPage.style.display = 'none';
-        if (mainApp) mainApp.style.display = 'flex';
-        camera.start(); 
-        // 進入主畫面後，先預設展示大樹式引導
-        openPoseIntro('tree');
-    }, 500);
-}
-startBtn?.addEventListener('click', startApp);
-
-let lastSpeakTime = 0; 
-function speakHint(text, cooldown = 3000) {
-    const currentTime = Date.now();
-    if (window.speechSynthesis.speaking || currentTime - lastSpeakTime < cooldown) return;
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'zh-TW'; 
-    utterance.rate = 1.2;     
-    utterance.pitch = 1.0;    
+    <!-- MediaPipe 函式庫 -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
     
-    window.speechSynthesis.speak(utterance);
-    lastSpeakTime = currentTime; 
-}
+    <!-- 圖表函式庫 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- 引入外部 CSS 與 JS -->
+    <link rel="stylesheet" href="style.css">
+    <script type="module" src="script.js"></script>
+</head>
+<body>
 
-// ==========================================
-// 🌟 10. AI 偵測邏輯 (加入彈窗中的暫停防護)
-// ==========================================
-function onResults(results) {
-    if (loadingDiv && loadingDiv.style.display !== 'none') {
-        loadingDiv.style.display = 'none';
-    }
+    <!-- 登入與歡迎畫面 -->
+    <div id="landing-page">
+        <h1 class="hero-title">AI Yoga Master</h1>
+        <p id="user-welcome" class="hero-subtitle">請先登入以記錄你的練習成果</p>
+        <button id="login-btn" class="start-btn btn-google">使用 Google 帳號登入</button>
+        <button id="start-btn" class="start-btn" style="display: none;">開始體驗</button>
+    </div>
 
-    canvasCtx.save();
-    canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-    canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+    <!-- 主要操作區塊 -->
+    <div id="main-app" style="display: none;">
+        <h1>AI Yoga Master</h1>
+        
+        <div class="user-info" id="user-display" style="color: #a4b0be; margin-bottom: 15px;">使用者：載入中...</div>
+        
+        <!-- 控制面板：整合所有動作與登出按鈕 -->
+        <div id="control-panel">
+            <span style="color: #a4b0be;">選擇動作：</span>
+            <button id="btn-tree" class="menu-btn active">大樹式</button>
+            <button id="btn-squat" class="menu-btn">深蹲</button>
+            <button id="btn-raise" class="menu-btn">平舉</button>
+            <button id="btn-flow" class="menu-btn" style="background-color: #f39c12; color: white; font-weight: bold; margin-left: 10px;">🔥 連續挑戰</button>
+            
+            <button id="logout-btn" class="menu-btn" style="background-color: #6c757d; color: white; margin-left: 10px;">登出</button>
+        </div>
 
-    // 🌟 若正處於教學彈窗觀看中，僅顯示灰色背景輔助骨架，不執行動作評分
-    if (isIntroActive) {
-        if (results.poseLandmarks) {
-            drawConnectors(canvasCtx, results.poseLandmarks, POSE_CONNECTIONS, {color: '#7f8c8d', lineWidth: 2});
-            drawLandmarks(canvasCtx, results.poseLandmarks, {color: '#bdc3c7', lineWidth: 1});
-        }
-        canvasCtx.restore();
-        return; 
-    }
+        <!-- 影像與狀態顯示區塊 -->
+        <div id="video-container">
+            <div id="loading">載入鏡頭與 AI 模型中...</div>
+            <video id="video" width="640" height="480" autoplay playsinline muted></video>
+            <canvas id="canvas" width="640" height="480"></canvas>
 
-    if (results.poseLandmarks) {
-        if (isTransitioning) {
-            drawConnectors(canvasCtx, results.poseLandmarks, POSE_CONNECTIONS, {color: '#bdc3c7', lineWidth: 4});
-            drawLandmarks(canvasCtx, results.poseLandmarks, {color: '#ffffff', lineWidth: 2});
-            canvasCtx.restore();
-            return; 
-        }
+            <div id="status-display">
+                <div id="pose-title">大樹式偵測</div>
+                
+                <div id="tree-info">
+                    <div class="status-title">手部狀態：</div>
+                    <div id="arm-status" class="status-value">等待姿勢...</div>
+                    <div class="status-title">腿部狀態：</div>
+                    <div id="leg-status" class="status-value">等待姿勢...</div>
+                </div>
+                
+                <div id="squat-info" style="display: none;">
+                    <div class="status-title">身體狀態：</div>
+                    <div id="squat-status" class="status-value">請開始深蹲</div>
+                </div>
 
-        drawConnectors(canvasCtx, results.poseLandmarks, POSE_CONNECTIONS, {color: '#00FF00', lineWidth: 4});
-        drawLandmarks(canvasCtx, results.poseLandmarks, {color: '#FF0000', lineWidth: 2});
+                <div id="generic-info" style="display: none;">
+                    <div class="status-title">動作提示：</div>
+                    <div id="pose-results" class="status-value">等待偵測...</div>
+                </div>
 
-        try {
-            const landmarks = results.poseLandmarks;
-            const shoulder = landmarks[12]; const elbow = landmarks[14]; const wrist = landmarks[16];    
-            const hip = landmarks[24]; const knee = landmarks[26]; const ankle = landmarks[28];    
+                <div id="save-status" style="margin-top: 10px; font-size: 14px; font-weight: bold; color: #2ed573;"></div>
+            </div>
+        </div>
 
-            if (shoulder && elbow && wrist && hip && knee && ankle) {
-                const elbowAngle = calculateAngle(shoulder, elbow, wrist); 
-                const shoulderAngle = calculateAngle(hip, shoulder, elbow); 
-                const kneeAngle = calculateAngle(hip, knee, ankle);         
-                const legAngle = calculateAngle(shoulder, hip, knee);      
+        <div id="history-controls" style="margin-top: 20px; text-align: center;">
+            <button id="btn-profile" class="menu-btn" style="background-color: #9b59b6; color: white;">👤 個人中心</button>
+            <button id="toggle-history-btn" class="menu-btn" style="background-color: #747d8c; color: white; margin-left: 10px;">查看歷史紀錄</button>
+            <button id="toggle-leaderboard-btn" class="menu-btn" style="background-color: #f39c12; color: white; margin-left: 10px;">🏆 查看全球排行榜</button>
+        </div>
 
-                // === 大樹式 ===
-                if (currentPoseMode === 'tree') {
-                    let isArmError = false; let isLegError = false;
+        <!-- 個人中心顯示區塊 -->
+        <div id="profile-container" style="display: none; background: rgba(255,255,255,0.9); padding: 20px; border-radius: 15px; margin-top: 20px; width: 640px; color: #333; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <h2 style="text-align: center; margin-bottom: 20px; color: #9b59b6;">👤 我的瑜珈專屬檔案</h2>
+            <div style="display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #a29bfe, #6c5ce7); padding: 25px; border-radius: 15px; color: white; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                <img id="profile-avatar" src="" alt="Avatar" style="width: 90px; height: 90px; border-radius: 50%; border: 4px solid white; object-fit: cover; background: #ddd; margin-right: 25px;">
+                <div style="text-align: left;">
+                    <h2 id="profile-name" style="margin: 0 0 12px 0; font-size: 26px;">載入中...</h2>
+                    <span id="profile-rank" style="background: #f1c40f; color: #d35400; padding: 6px 18px; border-radius: 20px; font-size: 14px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">判定中...</span>
+                </div>
+            </div>
+            <div style="display: flex; justify-content: space-between; text-align: center; margin-bottom: 20px;">
+                <div style="flex: 1; background: white; padding: 20px 10px; margin: 0 5px; border-radius: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                    <div style="font-size: 14px; color: #7f8c8d; margin-bottom: 5px;">累積積分</div>
+                    <div id="profile-total-score" style="font-size: 28px; font-weight: bold; color: #e67e22;">0</div>
+                </div>
+                <div style="flex: 1; background: white; padding: 20px 10px; margin: 0 5px; border-radius: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                    <div style="font-size: 14px; color: #7f8c8d; margin-bottom: 5px;">練習天數</div>
+                    <div id="profile-days-count" style="font-size: 28px; font-weight: bold; color: #3498db;">0</div>
+                </div>
+                <div style="flex: 1; background: white; padding: 20px 10px; margin: 0 5px; border-radius: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                    <div style="font-size: 14px; color: #7f8c8d; margin-bottom: 5px;">Perfect 總數</div>
+                    <div id="profile-perfect-count" style="font-size: 28px; font-weight: bold; color: #2ecc71;">0</div>
+                </div>
+            </div>
+            <div style="background: white; padding: 25px; border-radius: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                <h3 style="font-size: 18px; color: #34495e; text-align: center; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 20px;">📊 動作偏好與熟練度分析</h3>
+                <div style="width: 100%; max-width: 300px; height: 300px; margin: 0 auto;">
+                    <canvas id="posePreferenceChart"></canvas>
+                </div>
+            </div>
+        </div>
 
-                    if (elbowAngle < 160) {
-                        armStatusDiv.innerText = "錯誤：手肘彎曲了！請伸直。"; armStatusDiv.style.color = "var(--error-color)"; isArmError = true;
-                    } else if (shoulderAngle < 75) {
-                        armStatusDiv.innerText = "錯誤：手臂掉下來了！請抬高。"; armStatusDiv.style.color = "var(--error-color)"; isArmError = true;
-                    } else if (shoulderAngle > 105) {
-                        armStatusDiv.innerText = "錯誤：手臂舉太高了！請放平。"; armStatusDiv.style.color = "var(--error-color)"; isArmError = true;
-                    } else {
-                        armStatusDiv.innerText = "手臂 PERFECT！"; armStatusDiv.style.color = "var(--success-color)";
-                    }
+        <!-- 歷史紀錄顯示區塊 -->
+        <div id="history-container" style="display: none; background: rgba(255,255,255,0.9); padding: 20px; border-radius: 15px; margin-top: 20px; width: 640px; color: #333; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <h2 style="text-align: center; margin-bottom: 15px;">📊 我的練習進度 (最近 7 次)</h2>
+            <canvas id="historyChart"></canvas>
+            <h3 style="margin-top: 20px; border-top: 1px solid #ddd; padding-top: 15px;">📜 歷史明細</h3>
+            <ul id="history-list" style="list-style: none; padding: 0; max-height: 200px; overflow-y: auto;">
+                <li style="color: #999;">載入中...</li>
+            </ul>
+        </div>
+        
+        <!-- 排行榜顯示區塊 -->
+        <div id="leaderboard-container" style="display: none; background: rgba(255,255,255,0.9); padding: 20px; border-radius: 15px; margin-top: 20px; width: 640px; color: #333; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <h2 style="text-align: center; margin-bottom: 15px; color: #e65100;">🏆 全球瑜珈大師排行榜</h2>
+            <ul id="leaderboard-list" style="list-style: none; padding: 0; margin: 0; font-size: 18px;">
+                <li style="text-align: center; color: gray;">載入中...</li>
+            </ul>
+        </div>
 
-                    if (legAngle > 110) {
-                        legStatusDiv.innerText = "錯誤：再抬高腿！"; legStatusDiv.style.color = "var(--error-color)"; isLegError = true;
-                    } else if (legAngle < 75) {
-                        legStatusDiv.innerText = "錯誤：腳低一點！"; legStatusDiv.style.color = "var(--error-color)"; isLegError = true;
-                    } else if (kneeAngle < 160) {
-                        legStatusDiv.innerText = "錯誤：請把腳伸直！"; legStatusDiv.style.color = "var(--error-color)"; isLegError = true;
-                    } else {
-                        legStatusDiv.innerText = "完美抬腿！"; legStatusDiv.style.color = "var(--success-color)";
-                    }
+        <!-- 我加教學彈窗結構在這 -->
+        <!-- 🌟 動作介紹引導彈窗 (Intro Modal) -->
+        <div id="intro-modal" class="modal-overlay" style="display: none;">
+            <div class="modal-card">
+                <h2 id="intro-title">動作名稱</h2>
+                
+                <!-- 動態容器：支援影片或照片 -->
+                <div id="intro-media-wrapper">
+                    <video id="intro-video" autoplay loop muted playsinline style="display: none;"></video>
+                    <img id="intro-image" alt="Pose Demonstration" style="display: none;">
+                </div>
+        
+                <p id="intro-desc">動作描述與注意事項載入中...</p>
+                
+                <ul id="intro-tips" class="intro-tips-list"></ul>
+        
+                <button id="intro-start-btn" class="start-btn" style="margin-top: 15px;">我準備好了，開始檢測！</button>
+            </div>
+        </div>
 
-                    if (isArmError || isLegError) {
-                        statusDisplay.classList.add('error'); statusDisplay.classList.remove('perfect');
-                        perfectStartTime = 0; hasSavedThisRep = false; 
-                    } else {
-                        statusDisplay.classList.remove('error'); statusDisplay.classList.add('perfect');
-                        
-                        if (perfectStartTime === 0) perfectStartTime = Date.now();
-                        const holdDuration = Date.now() - perfectStartTime;
+        <!-- 🌟 3秒倒數遮罩 -->
+        <div id="countdown-overlay" style="display: none;">
+            <div id="countdown-number">3</div>
+            <div style="color: white; font-size: 24px; margin-top: 30px; letter-spacing: 2px;">準備開始</div>
+        </div>
 
-                        if (holdDuration >= 5000) {
-                            if (!hasSavedThisRep) handlePoseSuccess('大樹式');
-                        } else {
-                            const secondsLeft = Math.ceil((5000 - holdDuration) / 1000);
-                            armStatusDiv.innerText = `PERFECT! 請維持 ${secondsLeft} 秒...`; 
-                            armStatusDiv.style.color = "var(--success-color)";
-                        }
-                    }
-
-                // === 深蹲 ===
-                } else if (currentPoseMode === 'squat') {
-                    const squatHipAngle = calculateAngle(shoulder, hip, knee);   
-                    const squatKneeAngle = calculateAngle(hip, knee, ankle);    
+        <!-- 🌟 結算畫面 -->
+        <div id="summary-screen" style="display: none;">
+            <div class="summary-content">
+                <h1 style="color: #2c3e50; margin: 0 0 10px 0;">🏅 恭喜</h1>
+                <p style="color: #7f8c8d; margin-bottom: 30px;">你已完成此練習，再接再厲哦！</p>
+                
+                <div class="summary-stats-card">
+                    <h3 style="color: #7f8c8d; font-size: 16px; margin: 0 0 10px 0; font-weight: normal;">你已連續練習</h3>
+                    <div style="font-size: 48px; font-weight: bold; color: #2c3e50; margin-bottom: 25px;">
+                        <span id="summary-days">1</span><span style="font-size: 20px; font-weight: normal;"> 天</span>
+                    </div>
                     
-                    let squatStatus = "請開始深蹲"; let squatColor = "white";
-
-                    if (squatKneeAngle < 140) {
-                        if (squatKneeAngle > 110) {
-                            squatStatus = "再蹲低一點！"; squatColor = "yellow"; 
-                            speakHint("再蹲低一點"); 
-                        } else if (squatHipAngle > 120) {
-                            squatStatus = "錯誤：屁股要翹高，身體不要太直！"; squatColor = "var(--error-color)";
-                            speakHint("屁股要翹高，身體不要太直"); 
-                        } else {
-                            squatStatus = "標準深蹲！繼續保持！"; squatColor = "var(--success-color)";
-                            speakHint("標準深蹲！繼續保持！"); 
-                        }
-                    }
-
-                    if (squatColor === 'var(--error-color)') {
-                        squatStatusDiv.innerText = squatStatus; squatStatusDiv.style.color = squatColor;
-                        statusDisplay.classList.add('error'); statusDisplay.classList.remove('perfect');
-                        perfectStartTime = 0; hasSavedThisRep = false;
-                    } else if (squatColor === 'var(--success-color)') {
-                        statusDisplay.classList.remove('error'); statusDisplay.classList.add('perfect');
-                        
-                        if (perfectStartTime === 0) perfectStartTime = Date.now();
-                        const holdDuration = Date.now() - perfectStartTime;
-
-                        if (holdDuration >= 5000) {
-                            if (!hasSavedThisRep) handlePoseSuccess('深蹲');
-                        } else {
-                            const secondsLeft = Math.ceil((5000 - holdDuration) / 1000);
-                            squatStatusDiv.innerText = `HOLD 住了！請維持 ${secondsLeft} 秒...`;
-                            squatStatusDiv.style.color = squatColor;
-                        }
-                    } else {
-                        squatStatusDiv.innerText = squatStatus; squatStatusDiv.style.color = squatColor;
-                        statusDisplay.classList.remove('error', 'perfect');
-                        perfectStartTime = 0; hasSavedThisRep = false;
-                    }
-
-                // === 平舉 ===
-                } else if (currentPoseMode === 'Raise') {
-                    const rules = YOGA_DATABASE[currentPoseMode];
-                    let perfectCount = 0;
-                    let errors = [];
-
-                    rules.forEach(rule => {
-                        const p1 = results.poseLandmarks[rule.joints[0]];
-                        const p2 = results.poseLandmarks[rule.joints[1]];
-                        const p3 = results.poseLandmarks[rule.joints[2]];
-                        if(p1 && p2 && p3) {
-                            const angle = calculateAngle(p1, p2, p3);
-                            if (angle < rule.min || angle > rule.max) errors.push(rule.msg);
-                            else perfectCount++;
-                        }
-                    });
-
-                    if (perfectCount === rules.length) {
-                        statusDisplay.classList.add('perfect'); statusDisplay.classList.remove('error');
-                        
-                        if (perfectStartTime === 0) perfectStartTime = Date.now();
-                        const holdDuration = Date.now() - perfectStartTime;
-
-                        if (holdDuration >= 5000) { 
-                            if (!hasSavedThisRep) handlePoseSuccess('平舉');
-                            speakHint("平舉完成，太棒了！", 1000);
-                        } else {
-                            const secondsLeft = Math.ceil((5000 - holdDuration) / 1000);
-                            poseResultsDiv.innerHTML = `<span style="color: var(--success-color); font-weight: bold;">PERFECT! 請維持 ${secondsLeft} 秒...</span>`;
-                            speakHint("平舉姿勢完美，請撐住"); 
-                        }
-                    } else {
-                        poseResultsDiv.innerHTML = errors.map(e => `<div style="color: var(--error-color); margin-bottom: 5px;">${e}</div>`).join('');
-                        statusDisplay.classList.add('error'); statusDisplay.classList.remove('perfect');
-                        perfectStartTime = 0; hasSavedThisRep = false;
-
-                        if (errors.length > 0) speakHint(errors[0]); 
-                    }
-                }
-            }
-        } catch (e) {}
-    }
-    canvasCtx.restore();
-}
-
-// ==========================================
-// 11. 初始化 MediaPipe 與相機
-// ==========================================
-const pose = new Pose({locateFile: (file) => {
-    return `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`;
-}});
-pose.setOptions({ modelComplexity: 1, smoothLandmarks: true, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
-pose.onResults(onResults);
-
-const camera = new Camera(videoElement, {
-    onFrame: async () => { await pose.send({image: videoElement}); },
-    width: 640, height: 480
-});
-
-// ==========================================
-// 12. 排行榜系統
-// ==========================================
-async function uploadScore(points) {
-    if (!currentUser) return;
-    
-    const userLeaderboardRef = doc(db, "leaderboard", currentUser.uid);
-    try {
-        await setDoc(userLeaderboardRef, {
-            name: currentUser.displayName,
-            score: increment(points),
-            lastUpdate: new Date()
-        }, { merge: true });
-        
-        if (isLeaderboardVisible) loadLeaderboard();
-    } catch (e) { console.error("更新分數失敗", e); }
-}
-
-const toggleLeaderboardBtn = document.getElementById('toggle-leaderboard-btn');
-const leaderboardContainer = document.getElementById('leaderboard-container');
-let isLeaderboardVisible = false;
-
-if (toggleLeaderboardBtn) {
-    toggleLeaderboardBtn.addEventListener('click', () => {
-        isLeaderboardVisible = !isLeaderboardVisible;
-        if (isLeaderboardVisible) {
-            leaderboardContainer.style.display = 'block';
-            toggleLeaderboardBtn.innerText = '隱藏排行榜';
-            toggleLeaderboardBtn.style.backgroundColor = '#ff4757';
-            loadLeaderboard(); 
-            leaderboardContainer.scrollIntoView({ behavior: 'smooth' });
-        } else {
-            leaderboardContainer.style.display = 'none';
-            toggleLeaderboardBtn.innerText = '🏆 查看全球排行榜';
-            toggleLeaderboardBtn.style.backgroundColor = '#f39c12';
-        }
-    });
-}
-
-async function loadLeaderboard() {
-    const leaderboardCol = collection(db, "leaderboard");
-    const q = query(leaderboardCol, orderBy("score", "desc"), limit(10));
-    
-    try {
-        const querySnapshot = await getDocs(q);
-        const listElement = document.getElementById("leaderboard-list");
-        if (!listElement) return;
-        
-        listElement.innerHTML = ""; 
-        let rank = 1;
-        
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            let medal = rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : `🏅 ${rank}.`;
-            
-            const li = document.createElement("li");
-            li.innerHTML = `<strong>${medal}</strong> ${data.name} <span style="float:right; color:#ff9800; font-weight:bold;">${data.score} 分</span>`;
-            li.style.padding = "10px 0";
-            li.style.borderBottom = "1px solid #ffe0b2";
-            listElement.appendChild(li);
-            rank++;
-        });
-    } catch (e) { console.error("讀取排行榜失敗: ", e); }
-}
-
-// ==========================================
-// 13. 個人中心與數據視覺化系統
-// ==========================================
-const btnProfile = document.getElementById('btn-profile');
-const profileContainer = document.getElementById('profile-container');
-
-const profileAvatar = document.getElementById('profile-avatar');
-const profileName = document.getElementById('profile-name');
-const profileRank = document.getElementById('profile-rank');
-const profileTotalScore = document.getElementById('profile-total-score');
-const profileDaysCount = document.getElementById('profile-days-count');
-const profilePerfectCount = document.getElementById('profile-perfect-count');
-
-let preferenceChart = null; 
-let isProfileVisible = false;
-
-if (btnProfile) {
-    btnProfile.addEventListener('click', async () => {
-        if (!currentUser) {
-            alert("請先登入喔！");
-            return;
-        }
-        
-        isProfileVisible = !isProfileVisible;
-        
-        if (isProfileVisible) {
-            profileContainer.style.display = 'block';
-            btnProfile.innerText = '隱藏個人中心';
-            btnProfile.style.backgroundColor = '#ff4757';
-            profileContainer.scrollIntoView({ behavior: 'smooth' });
-            
-            profileName.innerText = currentUser.displayName || '瑜珈達人';
-            profileAvatar.src = currentUser.photoURL || 'https://via.placeholder.com/80?text=User';
-
-            try {
-                const userLeaderboardRef = doc(db, "leaderboard", currentUser.uid);
-                const docSnap = await getDoc(userLeaderboardRef);
+                    <hr style="border: 0; border-top: 1px solid #eee; margin-bottom: 25px;">
+                    
+                    <div style="display: flex; justify-content: space-between; text-align: left;">
+                        <div>
+                            <div style="color: #7f8c8d; font-size: 13px; margin-bottom: 5px;">🧘 練習動作</div>
+                            <div style="font-size: 22px; font-weight: bold; color: #2c3e50;"><span id="summary-actions">0</span> <span style="font-size: 14px; font-weight: normal;">個</span></div>
+                        </div>
+                        <div>
+                            <div style="color: #7f8c8d; font-size: 13px; margin-bottom: 5px;">⏳ 練習時長</div>
+                            <div style="font-size: 22px; font-weight: bold; color: #2c3e50;"><span id="summary-time">0</span> <span style="font-size: 14px; font-weight: normal;">分鐘</span></div>
+                        </div>
+                        <div>
+                            <div style="color: #7f8c8d; font-size: 13px; margin-bottom: 5px;">🔥 預估消耗</div>
+                            <div style="font-size: 22px; font-weight: bold; color: #2c3e50;"><span id="summary-cal">0</span> <span style="font-size: 14px; font-weight: normal;">千卡</span></div>
+                        </div>
+                    </div>
+                </div>
                 
-                let currentScore = 0;
-                if (docSnap.exists()) {
-                    currentScore = docSnap.data().score || 0;
-                }
-                profileTotalScore.innerText = currentScore;
-
-                if (currentScore < 50) {
-                    profileRank.innerText = "🌱 瑜珈新手";
-                    profileRank.style.background = "#bdc3c7";
-                } else if (currentScore < 200) {
-                    profileRank.innerText = "🧘‍♂️ 瑜珈學徒";
-                    profileRank.style.background = "#3498db";
-                    profileRank.style.color = "white";
-                } else if (currentScore < 500) {
-                    profileRank.innerText = "🔥 瑜珈達人";
-                    profileRank.style.background = "#e67e22";
-                    profileRank.style.color = "white";
-                } else {
-                    profileRank.innerText = "👑 瑜珈大師";
-                    profileRank.style.background = "#f1c40f";
-                    profileRank.style.color = "#c0392b";
-                }
-            } catch (e) { console.error("讀取積分失敗", e); }
-
-            try {
-                const historyRef = collection(db, "users", currentUser.uid, "history");
-                const querySnapshot = await getDocs(historyRef);
-                
-                let uniqueDates = new Set();
-                let poseCounts = { '大樹式': 0, '深蹲': 0, '平舉': 0 };
-                
-                profilePerfectCount.innerText = querySnapshot.size; 
-
-                querySnapshot.forEach((doc) => {
-                    const data = doc.data();
-                    if (data.date) uniqueDates.add(data.date);
-                    if (poseCounts[data.lastPose] !== undefined) {
-                        poseCounts[data.lastPose]++;
-                    }
-                });
-
-                profileDaysCount.innerText = uniqueDates.size; 
-                drawPreferenceChart([poseCounts['大樹式'], poseCounts['深蹲'], poseCounts['平舉']]);
-
-            } catch (e) { console.error("讀取歷史分析失敗", e); }
-            
-        } else {
-            profileContainer.style.display = 'none';
-            btnProfile.innerText = '👤 個人中心';
-            btnProfile.style.backgroundColor = '#9b59b6';
-        }
-    });
-}
-
-function drawPreferenceChart(dataPoints) {
-    const chartElem = document.getElementById('posePreferenceChart');
-    if (!chartElem) return;
-    const ctx = chartElem.getContext('2d');
-    if (preferenceChart) { preferenceChart.destroy(); } 
-    
-    const isDataEmpty = dataPoints.every(val => val === 0);
-    const renderData = isDataEmpty ? [1, 1, 1] : dataPoints;
-    const bgColors = isDataEmpty 
-        ? ['#ecf0f1', '#ecf0f1', '#ecf0f1'] 
-        : ['#1abc9c', '#9b59b6', '#f39c12'];
-
-    preferenceChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: ['大樹式', '深蹲', '平舉'],
-            datasets: [{
-                data: renderData,
-                backgroundColor: bgColors,
-                borderWidth: 2,
-                hoverOffset: 4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 12 } } },
-                tooltip: { enabled: !isDataEmpty }
-            },
-            cutout: '60%'
-        }
-    });
-}
+                <button id="summary-close-btn" class="start-btn" style="width: 100%; max-width: 400px; background: #34495e;">分享練習成就並返回</button>
+            </div>
+        </div>
+        
+    </div>
+</body>
+</html>
