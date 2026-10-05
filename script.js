@@ -38,20 +38,22 @@ const canvasElement = document.getElementById('canvas');
 const canvasCtx = canvasElement?.getContext('2d');
 const loadingDiv = document.getElementById('loading');
 
-// 登入相關與首頁
+const statusDisplay = document.getElementById('status-display');
+const poseTitle = document.getElementById('pose-title');
+const treeInfo = document.getElementById('tree-info');
+const squatInfo = document.getElementById('squat-info');
+const genericInfo = document.getElementById('generic-info');
+const armStatusDiv = document.getElementById('arm-status');
+const legStatusDiv = document.getElementById('leg-status');
+const squatStatusDiv = document.getElementById('squat-status');
+const poseResultsDiv = document.getElementById('pose-results');
+const saveStatusDiv = document.getElementById('save-status');
+
 const loginBtn = document.getElementById('login-btn'); 
 const startBtn = document.getElementById('start-btn');
 const logoutBtn = document.getElementById('logout-btn');
 const userWelcome = document.getElementById('user-welcome');
 const userDisplay = document.getElementById('user-display');
-
-// 側邊欄與大字幕 DOM (新版)
-const btnBackHome = document.getElementById('btn-back-home');
-const btnReIntro = document.getElementById('btn-re-intro');
-const badge1El = document.getElementById('prompt-badge-1');
-const badge2El = document.getElementById('prompt-badge-2');
-const messageEl = document.getElementById('prompt-message');
-const sidebarStatusBox = document.getElementById('sidebar-status-box');
 
 // 彈窗相關元素
 const introModal = document.getElementById('intro-modal');
@@ -232,11 +234,6 @@ btnBackHome?.addEventListener('click', () => {
     hasSavedThisRep = false;
 });
 
-// 側邊按鈕：重新看教學
-btnReIntro?.addEventListener('click', () => {
-    if (currentPoseMode) openPoseIntro(currentPoseMode);
-});
-
 // ==========================================
 // 8. 彈窗與 3 秒倒數計時
 // ==========================================
@@ -305,37 +302,20 @@ function switchPose(poseName) {
     perfectStartTime = 0;
     hasSavedThisRep = false;
 
-    // 重置大字幕狀態
-    setUIFeedback('等待', '偵測', '請站到鏡頭前並準備開始', 'normal');
-    if (timerNumberEl) timerNumberEl.innerText = "0";
+    if (saveStatusDiv) saveStatusDiv.innerText = '';
+    statusDisplay?.classList.remove('error', 'perfect');
+
+    if (treeInfo) treeInfo.style.display = poseName === 'tree' ? 'block' : 'none';
+    if (squatInfo) squatInfo.style.display = poseName === 'squat' ? 'block' : 'none';
+    if (genericInfo) genericInfo.style.display = poseName === 'Raise' ? 'block' : 'none';
 
     const currentObj = POSE_DATABASE.find(p => p.id === poseName);
-    if (currentWorkoutTitle) currentWorkoutTitle.innerText = currentObj ? currentObj.title : poseName;
+    if (poseTitle) poseTitle.innerText = `${currentObj ? currentObj.title : poseName} 偵測`;
 }
 
 // ==========================================
-// 🌟 9. 大字幕 UI 狀態更新函式與幾何運算與語音提示
+// 9. 幾何運算與語音提示
 // ==========================================
-function setUIFeedback(badge1, badge2, message, status) {
-    if (badge1El) badge1El.innerText = badge1;
-    if (badge2El) badge2El.innerText = badge2;
-    if (messageEl) messageEl.innerText = message;
-    
-    if (status === 'error') {
-        badge1El.className = 'badge-blue';
-        badge2El.className = 'badge-red';
-        messageEl.className = 'prompt-message-blue';
-    } else if (status === 'perfect') {
-        badge1El.className = 'badge-green';
-        badge2El.className = 'badge-green';
-        messageEl.className = 'prompt-message-green';
-    } else {
-        badge1El.className = 'badge-gray';
-        badge2El.className = 'badge-gray';
-        messageEl.className = 'prompt-message-gray';
-    }
-}
-
 function calculateAngle(a, b, c) {
     let radians = Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(a.y - b.y, a.x - b.x);
     let angle = Math.abs(radians * 180.0 / Math.PI);
@@ -546,11 +526,6 @@ function onResults(results) {
                 }
             }
         } catch (e) {}
-    }else {
-        // 如果沒有偵測到人
-        setUIFeedback('等待', '偵測', '請站到鏡頭前方，確保全身入鏡', 'normal');
-        if (timerNumberEl) timerNumberEl.innerText = "0";
-        perfectStartTime = 0;
     }
     canvasCtx.restore();
 }
@@ -608,7 +583,7 @@ function closeAllPanels() {
 }
 
 // ==========================================
-// 🌟 13. 個人中心資料讀取
+// 🌟 13. 個人中心資料讀取（修復段位與圓餅圖）
 // ==========================================
 async function loadProfileData() {
     if (!currentUser) return;
