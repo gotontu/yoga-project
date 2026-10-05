@@ -55,7 +55,7 @@ const logoutBtn = document.getElementById('logout-btn');
 const userWelcome = document.getElementById('user-welcome');
 const userDisplay = document.getElementById('user-display');
 
-// 🌟 新增：教學彈窗相關元素
+// 🌟 教學彈窗與結算畫面相關元素
 const introModal = document.getElementById('intro-modal');
 const introTitle = document.getElementById('intro-title');
 const introVideo = document.getElementById('intro-video');
@@ -63,6 +63,9 @@ const introImage = document.getElementById('intro-image');
 const introDesc = document.getElementById('intro-desc');
 const introTips = document.getElementById('intro-tips');
 const introStartBtn = document.getElementById('intro-start-btn');
+
+const summaryScreen = document.getElementById('summary-screen');
+const summaryCloseBtn = document.getElementById('summary-close-btn');
 
 // ==========================================
 // 4. 全域變數 & 動作資料庫
@@ -78,34 +81,34 @@ const yogaRoutine = ['tree', 'squat', 'Raise'];
 let currentRoutineIndex = 0; 
 let isRoutineMode = false;   
 let isTransitioning = false; 
+let routineStartTime = 0; // 用於計算總練習時長
 
-// 🌟 新增：動作教學素材庫 (影片/圖片可替換為本機路徑或外部 URL)
 const POSE_GUIDES = {
     'tree': {
         title: "大樹式 (Tree Pose)",
         type: "video",
-        src: "https://www.w3schools.com/html/mov_bbb.mp4", // 替換為你的影片路徑，如 "videos/tree.mp4"
+        src: "https://www.w3schools.com/html/mov_bbb.mp4", 
         desc: "大樹式能訓練下肢肌力與專注度，幫助平衡身心。",
         tips: ["雙手平舉或合十並伸直手肘", "支撐腳踩穩，另一腳抬至大腿或小腿內側", "切勿將腳掌直接壓在膝關節上"]
     },
     'squat': {
         title: "深蹲 (Squat)",
         type: "image",
-        src: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?auto=format&fit=crop&w=600&q=80", // 替換為你的圖片路徑，如 "images/squat.jpg"
+        src: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?auto=format&fit=crop&w=600&q=80", 
         desc: "深蹲能強化臀腿肌群與核心穩定度。",
         tips: ["雙腳與肩同寬，腳尖微外展", "臀部向後坐，下蹲時膝蓋不超過腳尖過多", "背部自然打直，胸口向前挺起"]
     },
     'Raise': {
         title: "側平舉 (Lateral Raise)",
         type: "video",
-        src: "https://www.w3schools.com/html/mov_bbb.mp4", // 替換為你的影片路徑，如 "videos/raise.mp4"
+        src: "https://www.w3schools.com/html/mov_bbb.mp4", 
         desc: "側平舉能增強肩膀三角肌與上肢控制力。",
         tips: ["雙臂平舉與地面平行", "手臂全程伸直勿微彎", "放鬆頸部勿過度聳肩"]
     }
 };
 
-let isIntroActive = false; // 是否正在觀看介紹 (觀看時暫停 AI 評分)
-let pendingPose = null;    // 即將進入的動作名稱
+let isIntroActive = false; 
+let pendingPose = null;    
 
 const YOGA_DATABASE = {
     "Raise": [
@@ -261,7 +264,7 @@ function renderHistoryChart(labels, dataPoints) {
 }
 
 // ==========================================
-// 🌟 7. 集中處理動作成功與換場邏輯
+// 🌟 7. 集中處理動作成功與換場邏輯 (圖四結算邏輯)
 // ==========================================
 function handlePoseSuccess(poseNameChinese) {
     saveDailyRecord(poseNameChinese, 'Perfect'); 
@@ -279,30 +282,18 @@ function handlePoseSuccess(poseNameChinese) {
                 saveStatusDiv.innerHTML = `<span style="font-size: 18px;">🎉 完美！休息一下，<b>5秒</b>後進入：<b>${nextPoseName}</b></span>`;
                 saveStatusDiv.style.color = "#3498db";
             }
-            setTimeout(() => {
-                speakHint(`完美！休息一下，5秒後進入${nextPoseName}`, 500);
-            }, 1500);
+            setTimeout(() => { speakHint(`完美！休息一下，5秒後進入${nextPoseName}`, 500); }, 1500);
 
             setTimeout(() => {
                 isTransitioning = false;
-                // 連續挑戰時切換動作也自動彈出介紹
-                openPoseIntro(nextPose);
+                openPoseIntro(nextPose); // 切換動作彈出介紹
                 if(btnFlow) btnFlow.classList.add('active'); 
             }, 5000);
             
         } else {
-            if (saveStatusDiv) {
-                saveStatusDiv.innerHTML = `🏆 <b>恭喜你！今日瑜珈挑戰全數完成！</b>`;
-                saveStatusDiv.style.color = "#ff4757";
-            }
-            setTimeout(() => {
-                speakHint("恭喜你！今日瑜珈挑戰全數完成！你太棒了！", 500);
-            }, 1500);
-            isRoutineMode = false;
+            // 所有動作完成，觸發圖四結算畫面
             isTransitioning = false;
-            if(btnFlow) btnFlow.classList.remove('active'); 
-            
-            setTimeout(() => { if(!isHistoryVisible && toggleHistoryBtn) toggleHistoryBtn.click(); }, 2000); 
+            showSummaryScreen();
         }
     } else {
         if (saveStatusDiv) {
@@ -312,13 +303,42 @@ function handlePoseSuccess(poseNameChinese) {
     }
 }
 
+// 觸發結算畫面
+function showSummaryScreen() {
+    const timeDiffMs = Date.now() - routineStartTime;
+    const minutes = Math.max(1, Math.floor(timeDiffMs / 60000));
+    // 簡單的熱量公式模擬 (實際依據動作數與時間)
+    const calories = Math.max(1, (minutes * 3) + (yogaRoutine.length * 5)); 
+
+    document.getElementById('summary-actions').innerText = yogaRoutine.length;
+    document.getElementById('summary-time').innerText = minutes;
+    document.getElementById('summary-cal').innerText = calories;
+    
+    // 假設連續天數可從歷史紀錄算，這裡先給個模擬值 1
+    document.getElementById('summary-days').innerText = "1"; 
+
+    summaryScreen.style.display = 'flex';
+    speakHint("恭喜你！今日瑜珈挑戰全數完成！");
+
+    isRoutineMode = false;
+    if(btnFlow) btnFlow.classList.remove('active'); 
+}
+
+// 結算畫面關閉按鈕
+if (summaryCloseBtn) {
+    summaryCloseBtn.addEventListener('click', () => {
+        summaryScreen.style.display = 'none';
+        if(!isHistoryVisible && toggleHistoryBtn) toggleHistoryBtn.click();
+    });
+}
+
 // ==========================================
-// 🌟 8. 動作介紹彈窗與切換邏輯
+// 🌟 8. 動作介紹彈窗、倒數計時與切換邏輯 (圖三倒數)
 // ==========================================
 function openPoseIntro(poseKey) {
     const guide = POSE_GUIDES[poseKey];
     if (!guide || !introModal) {
-        switchPose(poseKey);
+        startCountdownForPose(poseKey);
         return;
     }
 
@@ -358,11 +378,33 @@ if (introStartBtn) {
 
         isIntroActive = false;
         if (pendingPose) {
-            switchPose(pendingPose);
-            const guide = POSE_GUIDES[pendingPose];
-            speakHint(`開始${guide ? guide.title : pendingPose}，請就定位`, 1000);
+            startCountdownForPose(pendingPose); // 點擊準備好後，進入 3 秒倒數
         }
     });
+}
+
+function startCountdownForPose(poseKey) {
+    const overlay = document.getElementById('countdown-overlay');
+    const numberDiv = document.getElementById('countdown-number');
+    const guide = POSE_GUIDES[poseKey];
+
+    overlay.style.display = 'flex';
+    let count = 3;
+    numberDiv.innerText = count;
+    
+    speakHint("準備開始");
+
+    const timer = setInterval(() => {
+        count--;
+        if (count > 0) {
+            numberDiv.innerText = count;
+        } else {
+            clearInterval(timer);
+            overlay.style.display = 'none';
+            switchPose(poseKey); // 倒數完畢切換 UI 與動作模型
+            speakHint(`開始${guide ? guide.title : poseKey}，請就定位`, 1000);
+        }
+    }, 1000);
 }
 
 function switchPose(poseName) {
@@ -408,6 +450,7 @@ if (btnFlow) {
         isRoutineMode = true;
         currentRoutineIndex = 0; 
         isTransitioning = false; 
+        routineStartTime = Date.now(); // 記錄流程開始時間 (供圖四計算)
         btnFlow.classList.add('active'); 
         
         openPoseIntro(yogaRoutine[currentRoutineIndex]); 
@@ -417,7 +460,6 @@ if (btnFlow) {
                 saveStatusDiv.innerText = "🧘‍♀️ 瑜珈挑戰開始！請準備第一個動作";
                 saveStatusDiv.style.color = "#f39c12";
             }
-            speakHint("瑜珈挑戰開始！請準備第一個動作", 500);
         }, 100);
     });
 }
@@ -454,14 +496,14 @@ function speakHint(text, cooldown = 3000) {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'zh-TW'; 
     utterance.rate = 1.2;     
-    utterance.pitch = 1.0;    
+    utterance.pitch = 1.0;  
     
     window.speechSynthesis.speak(utterance);
     lastSpeakTime = currentTime; 
 }
 
 // ==========================================
-// 🌟 10. AI 偵測邏輯 (加入彈窗中的暫停防護)
+// 🌟 10. AI 偵測邏輯 (加入彈窗與倒數時的暫停防護)
 // ==========================================
 function onResults(results) {
     if (loadingDiv && loadingDiv.style.display !== 'none') {
@@ -472,8 +514,10 @@ function onResults(results) {
     canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
     canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
-    // 🌟 若正處於教學彈窗觀看中，僅顯示灰色背景輔助骨架，不執行動作評分
-    if (isIntroActive) {
+    const isCountdownActive = document.getElementById('countdown-overlay').style.display === 'flex';
+
+    // 若正處於教學彈窗觀看中或倒數中，僅顯示灰色背景輔助骨架，不執行動作評分
+    if (isIntroActive || isCountdownActive) {
         if (results.poseLandmarks) {
             drawConnectors(canvasCtx, results.poseLandmarks, POSE_CONNECTIONS, {color: '#7f8c8d', lineWidth: 2});
             drawLandmarks(canvasCtx, results.poseLandmarks, {color: '#bdc3c7', lineWidth: 1});
@@ -495,8 +539,8 @@ function onResults(results) {
 
         try {
             const landmarks = results.poseLandmarks;
-            const shoulder = landmarks[12]; const elbow = landmarks[14]; const wrist = landmarks[16];    
-            const hip = landmarks[24]; const knee = landmarks[26]; const ankle = landmarks[28];    
+            const shoulder = landmarks[12]; const elbow = landmarks[14]; const wrist = landmarks[16];   
+            const hip = landmarks[24]; const knee = landmarks[26]; const ankle = landmarks[28];   
 
             if (shoulder && elbow && wrist && hip && knee && ankle) {
                 const elbowAngle = calculateAngle(shoulder, elbow, wrist); 
