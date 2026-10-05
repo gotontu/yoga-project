@@ -173,13 +173,12 @@ body {
 
 /* 1. 整個練習室改為左右並排 */
 #workout-view {
-display: flex !important;
-    flex-direction: row !important;
-    justify-content: flex-start !important; /* 置中(center)改為靠左(flex-start) */
+    display: flex !important;
+    flex-direction: row !important; /* 強制左右排列 */
+    justify-content: center !important;
     align-items: flex-start !important;
-    padding: 30px !important; 
-    gap: 80px !important; /* 增加左側選單與中央鏡頭的間距，讓畫面不擁擠 */
-    /* box-sizing: border-box; */
+    padding: 30px !important;
+    gap: 40px !important; /* 左側面板與中央畫面的間距 */
 }
 
 /* 2. 左側控制面板 */
@@ -259,30 +258,6 @@ display: flex !important;
     overflow: hidden;
     background: #000;
 } */
-
-/* --- 解決雙鏡頭問題 --- */
-#video-container {
-    position: relative !important;
-    width: 640px !important;
-    height: 480px !important;
-    border-radius: 15px;
-    overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    background: #000;
-}
-
-#video { 
-    display: none !important; /* 🌟 絕對不能讓原鏡頭顯示出來 */
-}
-
-#canvas { 
-    position: absolute !important; /* 🌟 讓畫布貼齊容器 */
-    top: 0;
-    left: 0;
-    width: 100% !important; 
-    height: 100% !important; 
-    transform: scaleX(-1); /* 維持鏡像翻轉 */
-}
 
 /* 5. 中央鏡頭區塊 */
 .main-workout-area {
