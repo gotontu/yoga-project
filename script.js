@@ -83,8 +83,9 @@ let isTransitioning = false;
 const POSE_GUIDES = {
     'tree': {
         title: "大樹式 (Tree Pose)",
-        type: "video",
-        src: "https://www.w3schools.com/html/mov_bbb.mp4", // 替換為你的影片路徑，如 "videos/tree.mp4"
+        type: "youtube",
+        // 填入嵌入格式（或直接填影片 ID）
+        src: "https://www.youtube.com/embed/Lltjjlkmw-g?autoplay=1&mute=1&loop=1&playlist=Lltjjlkmw-g",
         desc: "大樹式能訓練下肢肌力與專注度，幫助平衡身心。",
         tips: ["雙手平舉或合十並伸直手肘", "支撐腳踩穩，另一腳抬至大腿或小腿內側", "切勿將腳掌直接壓在膝關節上"]
     },
@@ -329,19 +330,25 @@ function openPoseIntro(poseKey) {
     if (introDesc) introDesc.innerText = guide.desc;
     if (introTips) introTips.innerHTML = guide.tips.map(tip => `<li>${tip}</li>`).join('');
 
-    if (guide.type === 'video') {
-        if (introImage) introImage.style.display = 'none';
+    // 先重置並隱藏所有媒體元素
+    if (introVideo) { introVideo.pause(); introVideo.style.display = 'none'; }
+    if (introImage) introImage.style.display = 'none';
+    if (introYoutube) { introYoutube.src = ''; introYoutube.style.display = 'none'; }
+
+    // 根據類型顯示對應播放器
+    if (guide.type === 'youtube') {
+        if (introYoutube) {
+            introYoutube.src = guide.src;
+            introYoutube.style.display = 'block';
+        }
+    } else if (guide.type === 'video') {
         if (introVideo) {
             introVideo.src = guide.src;
             introVideo.style.display = 'block';
             introVideo.currentTime = 0;
             introVideo.play().catch(() => {});
         }
-    } else {
-        if (introVideo) {
-            introVideo.pause();
-            introVideo.style.display = 'none';
-        }
+    } else if (guide.type === 'image') {
         if (introImage) {
             introImage.src = guide.src;
             introImage.style.display = 'block';
@@ -355,6 +362,7 @@ if (introStartBtn) {
     introStartBtn.addEventListener('click', () => {
         if (introModal) introModal.style.display = 'none';
         if (introVideo) introVideo.pause();
+        if (introYoutube) introYoutube.src = ''; // 關閉彈窗時停止 YouTube 播放
 
         isIntroActive = false;
         if (pendingPose) {
