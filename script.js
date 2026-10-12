@@ -527,6 +527,7 @@ function onResults(results) {
                             const secondsLeft = Math.ceil((5000 - holdDuration) / 1000);
                             if (armStatusDiv) {
                                 armStatusDiv.innerText = `PERFECT! 請維持平衡 ${secondsLeft} 秒...`;
+                                speakHint("請繼續保持"); // 🌟 補上這行語音
                                 armStatusDiv.style.color = "var(--success-color)";
                             }
                         }
@@ -602,6 +603,7 @@ function onResults(results) {
                         } else {
                             const secondsLeft = Math.ceil((5000 - holdDuration) / 1000);
                             if (poseResultsDiv) poseResultsDiv.innerHTML = `<span style="color: var(--success-color); font-weight: bold;">PERFECT! 請維持 ${secondsLeft} 秒...</span>`;
+                            speakHint("請繼續保持"); // 🌟 補上這行語音
                         }
                     } else {
                         if (poseResultsDiv) poseResultsDiv.innerHTML = errors.map(e => `<div style="color: var(--error-color); margin-bottom: 5px;">${e}</div>`).join('');
