@@ -737,8 +737,8 @@ function drawPreferenceChart(dataPoints) {
     const isDataEmpty = dataPoints.every(val => val === 0);
     const renderData = isDataEmpty ? [1, 1, 1] : dataPoints;
     const bgColors = isDataEmpty 
-        ? ['#ecf0f1', '#ecf0f1', '#ecf0f1'] 
-        : ['#1abc9c', '#9b59b6', '#f39c12'];
+        ? ['#e2e8f0', '#e2e8f0', '#e2e8f0'] 
+        : ['#a29bfe', '#74b9ff', '#81ecec']; // 淺紫、淺天藍、薄荷青
 
     preferenceChart = new Chart(ctx, {
         type: 'doughnut',
