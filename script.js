@@ -456,6 +456,7 @@ function onResults(results) {
                         if (leftKneeAngle < 150) {
                             if (legStatusDiv) { legStatusDiv.innerText = "錯誤：支撐腳（左腳）請伸直！"; legStatusDiv.style.color = "var(--error-color)"; }
                             isLegError = true;
+                            speakHint("支撐腳請伸直"); // 🌟 補上這行語音
                         } else {
                             if (legStatusDiv) { legStatusDiv.innerText = "腿部 PERFECT！(左腳站穩，右腳抬起)"; legStatusDiv.style.color = "var(--success-color)"; }
                         }
@@ -463,12 +464,14 @@ function onResults(results) {
                         if (rightKneeAngle < 150) {
                             if (legStatusDiv) { legStatusDiv.innerText = "錯誤：支撐腳（右腳）請伸直！"; legStatusDiv.style.color = "var(--error-color)"; }
                             isLegError = true;
+                            speakHint("支撐腳請伸直"); // 🌟 補上這行語音
                         } else {
                             if (legStatusDiv) { legStatusDiv.innerText = "腿部 PERFECT！(右腳站穩，左腳抬起)"; legStatusDiv.style.color = "var(--success-color)"; }
                         }
                     } else {
                         if (legStatusDiv) { legStatusDiv.innerText = "請單腳站穩，另一腳曲膝抬高貼於腿側"; legStatusDiv.style.color = "var(--error-color)"; }
                         isLegError = true;
+                        speakHint("請單腳站立，另一腳曲膝貼於腿側"); // 🌟 補上這行語音
                     }
 
                     const leftElbowAngle = calculateAngle(shoulderL, elbowL, wristL);
@@ -482,6 +485,7 @@ function onResults(results) {
                         if (leftElbowAngle < 125 || rightElbowAngle < 125) {
                             if (armStatusDiv) { armStatusDiv.innerText = "錯誤：雙手高舉時請伸直手肘！"; armStatusDiv.style.color = "var(--error-color)"; }
                             isArmError = true;
+                            speakHint("雙手高舉時手肘請打直"); // 🌟 補上這行語音
                         } else {
                             if (armStatusDiv) { armStatusDiv.innerText = "手臂 PERFECT！(高舉伸展)"; armStatusDiv.style.color = "var(--success-color)"; }
                         }
@@ -490,6 +494,7 @@ function onResults(results) {
                     } else {
                         if (armStatusDiv) { armStatusDiv.innerText = "手部請舉過頭頂，或於胸前合十"; armStatusDiv.style.color = "var(--error-color)"; }
                         isArmError = true;
+                        speakHint("手部請舉過頭頂，或於胸前合十"); // 🌟 補上這行語音
                     }
 
                     if (isArmError || isLegError) {
