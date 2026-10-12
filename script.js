@@ -391,15 +391,28 @@ function calculateAngle(a, b, c) {
     return angle;
 }
 
-let lastSpeakTime = 0; 
+let lastSpeakTime = 0;
+let lastSpokenText = "";
+
 function speakHint(text, cooldown = 3000) {
+    if (!('speechSynthesis' in window)) return;
+
     const currentTime = Date.now();
-    if (window.speechSynthesis.speaking || currentTime - lastSpeakTime < cooldown) return;
+    // 檢查冷卻時間，避免同時間狂念
+    if (currentTime - lastSpeakTime < cooldown) return;
+    if (text === lastSpokenText && currentTime - lastSpeakTime < 4500) return;
+
+    // 🌟 關鍵修正：強制清除上一句卡住的佇列，解除 speaking = true 的死鎖狀態
+    window.speechSynthesis.cancel();
+
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'zh-TW'; 
-    utterance.rate = 1.2;     
+    utterance.lang = 'zh-TW';
+    utterance.rate = 1.1;
+
+    lastSpeakTime = currentTime;
+    lastSpokenText = text;
+
     window.speechSynthesis.speak(utterance);
-    lastSpeakTime = currentTime; 
 }
 
 // ==========================================
