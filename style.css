@@ -792,3 +792,36 @@ body {
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.2); }
 }
+
+/* =====================================
+   🌟 動作介紹彈窗：「我準備好了，開始倒數！」按鈕
+   ===================================== */
+#intro-start-btn {
+    display: inline-block;
+    width: 100%;
+    margin-top: 20px;
+    padding: 14px 28px;
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #ffffff !important;
+    background: linear-gradient(135deg, #e056fd 0%, #7158e2 100%) !important;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    box-shadow: 0 8px 22px rgba(142, 68, 173, 0.35);
+    transition: all 0.25s ease;
+}
+
+/* 滑鼠懸停效果：上浮、光暈加深 */
+#intro-start-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgba(113, 88, 226, 0.5);
+    filter: brightness(1.06);
+}
+
+/* 點擊時的下壓反饋 */
+#intro-start-btn:active {
+    transform: translateY(1px);
+    box-shadow: 0 4px 12px rgba(113, 88, 226, 0.4);
+}
