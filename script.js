@@ -610,6 +610,11 @@ function onResults(results) {
                         statusDisplay?.classList.add('error');
                         statusDisplay?.classList.remove('perfect');
                         perfectStartTime = 0;
+
+                        // 🌟 修復這裡：如果陣列中有錯誤，使用語音唸出第一個錯誤訊息
+                        if (errors.length > 0) {
+                            speakHint(errors[0]); 
+                        }
                     }
                 }
             }
