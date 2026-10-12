@@ -574,20 +574,19 @@ function onResults(results) {
                         perfectStartTime = 0;
                     }
 
-                // === 側平舉 ===
-                // ==================== [3] 側平舉 ====================
+               // ==================== [3] 側平舉 ====================
                 } else if (currentPoseMode.toLowerCase() === 'raise') {
                     // 1. 手肘伸直角度 (左 11-13-15, 右 12-14-16)
                     const leftElbowAngle = calculateAngle(shoulderL, elbowL, wristL);
                     const rightElbowAngle = calculateAngle(shoulderR, elbowR, wristR);
-                
+
                     // 2. 手臂與軀幹抬起夾角 (左 23-11-13, 右 24-12-14)
                     const leftArmRaiseAngle = calculateAngle(hipL, shoulderL, elbowL);
                     const rightArmRaiseAngle = calculateAngle(hipR, shoulderR, elbowR);
-                
+
                     let isRaiseError = false;
                     let raiseMessages = [];
-                
+
                     // 檢測雙臂是否抬至肩膀高度 (約 65° ~ 110°)
                     if (leftArmRaiseAngle < 60 && rightArmRaiseAngle < 60) {
                         raiseMessages.push("請將雙臂向兩側抬起至肩膀高度");
@@ -609,7 +608,7 @@ function onResults(results) {
                             speakHint("右手再抬高一點");
                         }
                     }
-                
+
                     // 檢測手肘是否打直
                     if (!isRaiseError) {
                         if (leftElbowAngle < 140) {
@@ -623,7 +622,8 @@ function onResults(results) {
                             speakHint("右手手肘請打直");
                         }
                     }
-                
+
+                    // 狀態判斷與語音回饋
                     if (isRaiseError) {
                         if (poseResultsDiv) {
                             poseResultsDiv.innerHTML = raiseMessages.map(msg => 
@@ -634,28 +634,33 @@ function onResults(results) {
                         statusDisplay?.classList.remove('perfect');
                         perfectStartTime = 0;
                         hasSavedThisRep = false;
+
+                        // 唸出第一個錯誤訊息
+                        if (raiseMessages.length > 0) {
+                            speakHint(raiseMessages[0]);
+                        }
                     } else {
                         // 雙臂達到標準
                         statusDisplay?.classList.remove('error');
                         statusDisplay?.classList.add('perfect');
-                
+
                         if (perfectStartTime === 0) perfectStartTime = Date.now();
                         const holdDuration = Date.now() - perfectStartTime;
-                
+
                         if (holdDuration >= 5000) {
                             if (!hasSavedThisRep) handlePoseSuccess('平舉');
                         } else {
-                            // 已修正：(5000 - holdDuration) 加上減號
                             const secondsLeft = Math.ceil((5000 - holdDuration) / 1000);
                             if (poseResultsDiv) {
                                 poseResultsDiv.innerHTML = `<span style="color: var(--success-color); font-weight: bold;">PERFECT! 手臂維持平舉 ${secondsLeft} 秒...</span>`;
                             }
                         }
                     }
-                    }
                 }
             }
-        } catch (e) {}
+        } catch (e) {
+            console.warn("Pose processing error:", e);
+        }
     }
     canvasCtx.restore();
 }
