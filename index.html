@@ -136,8 +136,7 @@
     </div>
 
     <!-- 3. 訓練偵測室 (Workout View) -->
-    <div id="workout-view" style="display: none;">
-        
+    <div id="workout-view" class="workout-container" style="display: none;">        
         <!-- 左側控制面板 -->
         <div class="left-control-panel">
             <button id="btn-back-home" class="back-home-btn">⬅️ 返回動作選單</button>
@@ -166,8 +165,8 @@
             
             <div id="video-container">
                 <div id="loading">啟動鏡頭與 AI 模型中...</div>
-                <video id="video" width="640" height="480" autoplay playsinline muted></video>
-                <canvas id="canvas" width="640" height="480"></canvas>
+                <video id="video" width="800" height="450" autoplay playsinline muted></video>
+                <canvas id="canvas" width="800" height="450"></canvas>
             </div>
 
             <!-- 鏡頭下方的提示詞 -->
