@@ -573,7 +573,6 @@ function onResults(results) {
                         statusDisplay?.classList.remove('perfect');
                         perfectStartTime = 0;
                     }
-                }  //這裡的大括號
                // ==================== [3] 側平舉 ====================
                 } else if (currentPoseMode.toLowerCase() === 'raise') {
                     // 1. 手肘伸直角度 (左 11-13-15, 右 12-14-16)
