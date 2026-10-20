@@ -534,22 +534,30 @@ function onResults(results) {
                     }
 
                 // === 深蹲 ===
-                } else if (currentPoseMode === 'squat') {
+                } else if (currentPoseMode.toLowerCase() === 'squat') {
+                    const leftKneeAngle = calculateAngle(hipL, kneeL, ankleL);
+                    const rightKneeAngle = calculateAngle(hipR, kneeR, ankleR);
+                    // 🌟 取兩膝較低者，避免單側被鏡頭遮擋
+                    const squatKneeAngle = Math.min(leftKneeAngle, rightKneeAngle);
                     const squatHipAngle = calculateAngle(shoulderR, hipR, kneeR);   
-                    const squatKneeAngle = calculateAngle(hipR, kneeR, ankleR);    
-                    let squatStatus = "請開始深蹲";
-                    let squatColor = "white";
 
-                    if (squatKneeAngle < 140) {
-                        if (squatKneeAngle > 110) {
-                            squatStatus = "再蹲低一點！"; squatColor = "yellow"; 
+                    let squatStatus = "準備就緒，請開始下蹲...";
+                    let squatColor = "#747d8c"; // 預設柔和灰
+
+                    // 🌟 調早偵測門檻：只要小於 165 度（稍微屈膝）就開始反饋
+                    if (squatKneeAngle < 165) {
+                        if (squatKneeAngle > 125) {
+                            squatStatus = "動作偵測中：請再蹲低一點！"; 
+                            squatColor = "#e67e22"; // 🌟 改用高對比暖橙色，取代刺眼黃色
                             speakHint("再蹲低一點"); 
-                        } else if (squatHipAngle > 120) {
-                            squatStatus = "錯誤：屁股要翹高，身體不要太直！"; squatColor = "var(--error-color)";
-                            speakHint("屁股要翹高，身體不要太直"); 
+                        } else if (squatHipAngle > 135) {
+                            squatStatus = "錯誤：屁股向後坐，身體不要過度前傾！"; 
+                            squatColor = "var(--error-color)";
+                            speakHint("屁股向後坐，背部打直"); 
                         } else {
-                            squatStatus = "標準深蹲！繼續保持！"; squatColor = "var(--success-color)";
-                            speakHint("標準深蹲！繼續保持！"); 
+                            squatStatus = "標準深蹲！保持姿勢穩定！"; 
+                            squatColor = "var(--success-color)";
+                            speakHint("標準深蹲，請保持"); 
                         }
                     }
 
@@ -571,6 +579,7 @@ function onResults(results) {
                         }
                     } else {
                         statusDisplay?.classList.remove('perfect');
+                        if (squatColor === 'var(--error-color)') statusDisplay?.classList.add('error');
                         perfectStartTime = 0;
                     }
                // ==================== [3] 側平舉 ====================
