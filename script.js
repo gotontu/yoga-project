@@ -1970,3 +1970,131 @@ document.getElementById("favorites-refresh-btn")
     ?.addEventListener("click", () => {
         void loadFavoritesData();
     });
+// ==========================================
+// 🌟 16. 郵件提醒功能模組 (EmailJS)
+// ==========================================
+
+// ⚠️ 請填入你從 EmailJS 複製的三個代碼：
+const EMAILJS_PUBLIC_KEY = "xfPxgJEpZ-Ur7Tq7e";
+const EMAILJS_SERVICE_ID = "service_k67ijnj";
+const EMAILJS_TEMPLATE_ID = "template_he8ob63";
+
+// 初始化套件
+if (typeof emailjs !== 'undefined') {
+    emailjs.init(EMAILJS_PUBLIC_KEY);
+}
+
+// 取得彈窗與按鈕元素
+const btnEmailRemind = document.getElementById('btn-email-remind');
+const emailModal = document.getElementById('email-modal');
+const btnCloseEmailModal = document.getElementById('btn-close-email-modal');
+const remindEmailInput = document.getElementById('remind-email-input');
+const remindTimeInput = document.getElementById('remind-time-input');
+const btnSendTestEmail = document.getElementById('btn-send-test-email');
+const btnSaveRemind = document.getElementById('btn-save-remind');
+
+// 1. 點擊導覽列「✉️ 提醒信」按鈕打開彈窗
+btnEmailRemind?.addEventListener('click', async () => {
+    if (!currentUser) {
+        alert("請先登入帳號！");
+        return;
+    }
+
+    if (remindEmailInput) remindEmailInput.value = currentUser.email || "";
+
+    // 嘗試從 Firebase 讀取之前設定過的時間
+    try {
+        const userPrefRef = doc(db, "users", currentUser.uid);
+        const docSnap = await getDoc(userPrefRef);
+        if (docSnap.exists() && docSnap.data().remindTime) {
+            remindTimeInput.value = docSnap.data().remindTime;
+        }
+    } catch (e) {
+        console.warn("讀取時間偏好失敗:", e);
+    }
+
+    if (emailModal) emailModal.style.display = 'flex';
+});
+
+// 2. 點擊「關閉」隱藏彈窗
+btnCloseEmailModal?.addEventListener('click', () => {
+    if (emailModal) emailModal.style.display = 'none';
+});
+
+// 3. 發送信件核心函式
+async function sendWorkoutReminder(targetEmail, userName) {
+    try {
+        const templateParams = {
+            to_email: targetEmail,
+            user_name: userName || "瑜珈夥伴",
+            message: "今天還沒練習瑜珈喔！打開鏡頭練習 5 分鐘，保持身心平衡吧！"
+        };
+
+        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams);
+        return true;
+    } catch (error) {
+        console.error("寄送信件失敗:", error);
+        return false;
+    }
+}
+
+// 4. 點擊「立即寄送測試信」按鈕
+btnSendTestEmail?.addEventListener('click', async () => {
+    if (!currentUser || !currentUser.email) {
+        alert("無法讀取信箱，請確認是否已登入！");
+        return;
+    }
+
+    btnSendTestEmail.innerText = "寄送中...";
+    btnSendTestEmail.disabled = true;
+
+    const isSuccess = await sendWorkoutReminder(currentUser.email, currentUser.displayName);
+
+    btnSendTestEmail.innerText = "立即寄送測試信";
+    btnSendTestEmail.disabled = false;
+
+    if (isSuccess) {
+        alert("測試信已寄出！請至信箱確認（若沒看到可檢查垃圾郵件匣）。");
+    } else {
+        alert("寄送失敗，請確認你的 EmailJS 三個金鑰是否填寫正確！");
+    }
+});
+
+// 5. 點擊「儲存設定」按鈕（記錄到 Firebase）
+btnSaveRemind?.addEventListener('click', async () => {
+    if (!currentUser) return;
+
+    const timeValue = remindTimeInput.value;
+    try {
+        const userPrefRef = doc(db, "users", currentUser.uid);
+        await setDoc(userPrefRef, {
+            email: currentUser.email,
+            remindTime: timeValue,
+            lastUpdated: new Date()
+        }, { merge: true });
+
+        alert(`已設定完成！每日 ${timeValue} 將作為你的提醒時間。`);
+        if (emailModal) emailModal.style.display = 'none';
+    } catch (e) {
+        console.error("儲存偏好失敗:", e);
+        alert("儲存設定失敗，請稍後再試。");
+    }
+});
+
+// 6. 前端定時檢查（若網頁開著，時間到自動寄信）
+setInterval(() => {
+    if (!currentUser || !remindTimeInput) return;
+
+    const now = new Date();
+    const currentHours = String(now.getHours()).padStart(2, '0');
+    const currentMinutes = String(now.getMinutes()).padStart(2, '0');
+    const currentTimeStr = `${currentHours}:${currentMinutes}`;
+
+    const todayStr = now.toLocaleDateString();
+    const lastSentDay = localStorage.getItem('lastReminderSentDate');
+
+    if (currentTimeStr === remindTimeInput.value && lastSentDay !== todayStr) {
+        sendWorkoutReminder(currentUser.email, currentUser.displayName);
+        localStorage.setItem('lastReminderSentDate', todayStr);
+    }
+}, 60000);
