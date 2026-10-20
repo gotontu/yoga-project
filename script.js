@@ -112,7 +112,7 @@ const POSE_DATABASE = [
         title: "大樹式",
         subtitle: "Tree Pose",
         img: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=600&q=80",
-        videoUrl: "",
+        videoUrl: "https://youtube.com/shorts/jMez5L0w4yI?si=EziVERqG7C-uGJfH",
         desc: "大樹式能訓練下肢肌力、單腳平衡感與專注度。",
         tips: [
             "單腳伸直站穩，另一腳曲膝抬起貼於大腿或小腿內側",
@@ -125,7 +125,7 @@ const POSE_DATABASE = [
         title: "深蹲",
         subtitle: "Squat",
         img: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?auto=format&fit=crop&w=600&q=80",
-        videoUrl: "",
+        videoUrl: "https://youtube.com/shorts/PpP98TMiVKY?si=PIFfjJn1-IQ1KbSX",
         desc: "深蹲能強化臀大肌、股四頭肌與核心穩定度。",
         tips: [
             "雙腳與肩同寬，腳尖微外展 15-30 度",
