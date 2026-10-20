@@ -465,21 +465,24 @@ function onResults(results) {
                     const isRightLegLifted = (ankleR.y < ankleL.y - 0.05) && (rightKneeAngle < 145);
                     const isLeftLegLifted = (ankleL.y < ankleR.y - 0.05) && (leftKneeAngle < 145);
 
+                    let squatStatus = "準備就緒，請開始...";
+                    let squatColor = "#747d8c"; // 預設柔和灰
+
                     if (isRightLegLifted) {
                         if (leftKneeAngle < 150) {
                             if (legStatusDiv) { legStatusDiv.innerText = "錯誤：支撐腳（左腳）請伸直！"; legStatusDiv.style.color = "var(--error-color)"; }
                             isLegError = true;
                             speakHint("支撐腳請伸直"); // 🌟 補上這行語音
                         } else {
-                            if (legStatusDiv) { legStatusDiv.innerText = "腿部 PERFECT！(左腳站穩，右腳抬起)"; legStatusDiv.style.color = "var(--success-color)"; }
+                            if (legStatusDiv) { legStatusDiv.innerText = "腿部 PERFECT！(右腳站穩，左腳抬起)"; legStatusDiv.style.color = "var(--success-color)"; }
                         }
                     } else if (isLeftLegLifted) {
                         if (rightKneeAngle < 150) {
-                            if (legStatusDiv) { legStatusDiv.innerText = "錯誤：支撐腳（右腳）請伸直！"; legStatusDiv.style.color = "var(--error-color)"; }
+                            if (legStatusDiv) { legStatusDiv.innerText = "錯誤：支撐腳（左腳）請伸直！"; legStatusDiv.style.color = "var(--error-color)"; }
                             isLegError = true;
                             speakHint("支撐腳請伸直"); // 🌟 補上這行語音
                         } else {
-                            if (legStatusDiv) { legStatusDiv.innerText = "腿部 PERFECT！(右腳站穩，左腳抬起)"; legStatusDiv.style.color = "var(--success-color)"; }
+                            if (legStatusDiv) { legStatusDiv.innerText = "腿部 PERFECT！(左腳站穩，右腳抬起)"; legStatusDiv.style.color = "var(--success-color)"; }
                         }
                     } else {
                         if (legStatusDiv) { legStatusDiv.innerText = "請單腳站穩，另一腳曲膝抬高貼於腿側"; legStatusDiv.style.color = "var(--error-color)"; }
@@ -594,6 +597,9 @@ function onResults(results) {
 
                     let isRaiseError = false;
                     let raiseMessages = [];
+
+                    let squatStatus = "準備就緒，請開始進行平舉...";
+                    let squatColor = "#747d8c"; // 預設柔和灰
 
                     // 檢測雙臂是否抬至肩膀高度 (約 65° ~ 110°)
                     if (leftArmRaiseAngle < 60 && rightArmRaiseAngle < 60) {
