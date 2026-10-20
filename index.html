@@ -2,51 +2,43 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI Yoga Master - 智能瑜伽綜合版</title>
-    
-    <!-- MediaPipe 函式庫 -->
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
-    
-    <!-- 圖表函式庫 -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <link rel="stylesheet" href="style.css">
-    <script type="module" src="script.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yoga Master - 智能瑜伽綜合版</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5/pose.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+
+    <link rel="stylesheet" href="style.css?v=20261020-ui2">
+    <script type="module" src="script.js?v=20261020-ui2"></script>
 </head>
 <body>
 
-    <!-- 1. 登入與歡迎畫面 -->
     <div id="landing-page">
-        <!-- 背景動態光暈光球裝飾 -->
         <div class="landing-bg-decorations">
             <span class="glow-orb orb-1"></span>
             <span class="glow-orb orb-2"></span>
             <span class="glow-orb orb-3"></span>
         </div>
-    
-        <!-- 登入核心卡片 (毛玻璃質感) -->
+
         <div class="landing-glass-card">
-            <!-- 瑜珈呼吸動態圖標 -->
             <div class="yoga-badge-icon">
                 <span class="yoga-emoji">🧘‍♀️</span>
             </div>
-    
-            <div class="tag-pill">AI 智能姿態校正系統</div>
-            <h1 class="hero-title">AI Yoga Master</h1>
-            <p id="user-welcome" class="hero-subtitle">探索身心平衡，開啟你的專屬智能瑜珈旅程</p>
-    
-            <!-- 亮點標籤列 -->
+
+            <div class="tag-pill">智能姿態校正系統</div>
+            <h1 class="hero-title">Yoga Master</h1>
+            <p id="user-welcome" class="hero-subtitle">
+                探索身心平衡，開啟你的專屬智能瑜珈旅程
+            </p>
+
             <div class="hero-features">
                 <span class="feat-chip">✨ 即時關節分析</span>
                 <span class="feat-chip">📊 每日練習紀錄</span>
                 <span class="feat-chip">🏆 榮譽段位榜</span>
             </div>
-    
-            <!-- 按鈕區 -->
+
             <div class="action-btn-group">
                 <button id="login-btn" class="start-btn btn-google-card">
                     <svg class="google-icon" viewBox="0 0 24 24" width="20" height="20">
@@ -57,122 +49,270 @@
                     </svg>
                     <span>使用 Google 帳號登入</span>
                 </button>
-    
-                <!-- 登入成功後自動顯現的開始按鈕 -->
+
                 <button id="start-btn" class="start-btn btn-explore" style="display: none;">
                     開始今日修煉 ➔
                 </button>
             </div>
-    
+
             <div class="landing-footer-hint">
                 <span>🔒 本地鏡頭運算 · 保護隱私不留存影像</span>
             </div>
         </div>
     </div>
 
-    <!-- 2. 首頁大廳 (Home View) -->
     <div id="home-view" style="display: none;">
-        <!-- 上方功能導覽列 -->
         <header class="top-navbar">
             <div class="nav-brand">
-                <h2>🧘 AI Yoga Master</h2>
+                <h2>🧘 Yoga Master</h2>
                 <span id="user-display" class="user-badge">使用者：載入中...</span>
             </div>
+
             <div class="nav-actions">
-                <button id="btn-profile" class="nav-btn btn-purple">👤 個人中心</button>
-                <button id="toggle-history-btn" class="nav-btn btn-gray">📜 歷史紀錄</button>
-                <button id="toggle-leaderboard-btn" class="nav-btn btn-orange">🏆 全球排行榜</button>
-                <button id="logout-btn" class="nav-btn btn-danger">🚪 登出</button>
+                <button id="btn-profile" aria-controls="profile-container" class="nav-btn btn-purple">
+                    👤 個人中心
+                </button>
+                <button id="toggle-favorites-btn" aria-controls="favorites-container" class="nav-btn btn-gray">
+                    ❤️ 我的最愛
+                </button>
+                <button id="toggle-leaderboard-btn" class="nav-btn btn-orange">
+                    🏆 全球排行榜
+                </button>
+                <button id="logout-btn" class="nav-btn btn-danger">
+                    🚪 登出
+                </button>
             </div>
         </header>
 
-        <!-- 彈出抽屜區塊 (個人中心 / 歷史紀錄 / 排行榜) -->
         <div id="overlay-panels-container">
-            <!-- 個人中心 -->
-            <div id="profile-container" class="dashboard-panel" style="display: none;">
-                <h2>👤 我的瑜珈專屬檔案</h2>
+
+            <div id="profile-container"
+                 class="dashboard-panel"
+                 aria-labelledby="profile-heading"
+                 tabindex="-1"
+                 style="display: none;">
+
+                <h2 id="profile-heading">👤 我的瑜珈專屬檔案</h2>
+
                 <div class="profile-card">
-                    <img id="profile-avatar" src="" alt="Avatar">
+                    <img id="profile-avatar"
+                         src=""
+                         alt="Avatar"
+                         referrerpolicy="no-referrer">
                     <div>
                         <h3 id="profile-name">載入中...</h3>
                         <span id="profile-rank" class="rank-tag">判定中...</span>
                     </div>
                 </div>
+
                 <div class="profile-stats-grid">
-                    <div class="stat-box"><div>累積積分</div><strong id="profile-total-score">0</strong></div>
-                    <div class="stat-box"><div>練習天數</div><strong id="profile-days-count">0</strong></div>
-                    <div class="stat-box"><div>Perfect 總數</div><strong id="profile-perfect-count">0</strong></div>
+                    <div class="stat-box">
+                        <div>累積積分</div>
+                        <strong id="profile-total-score">0</strong>
+                    </div>
+                    <div class="stat-box">
+                        <div>練習天數</div>
+                        <strong id="profile-days-count">0</strong>
+                    </div>
+                    <div class="stat-box">
+                        <div>Perfect 總數</div>
+                        <strong id="profile-perfect-count">0</strong>
+                    </div>
                 </div>
-                <div class="chart-wrapper" style="width: 280px; margin: 0 auto;">
-                    <canvas id="posePreferenceChart"></canvas>
-                </div>
+
+                <section class="checkin-section" aria-labelledby="checkin-heading">
+                    <div class="checkin-section-header">
+                        <div class="checkin-heading-group">
+                            <span class="checkin-heading-icon" aria-hidden="true">▦</span>
+                            <div>
+                                <h3 id="checkin-heading">每日簽到</h3>
+                                <p class="checkin-description">
+                                    為每天的自己，留下一點進步。
+                                </p>
+                            </div>
+                        </div>
+                        <span id="checkin-badge" class="checkin-auto-badge">
+                            登入自動簽到
+                        </span>
+                    </div>
+
+                    <div class="checkin-calendar">
+                        <div class="checkin-toolbar">
+                            <button id="checkin-prev-month"
+                                    class="checkin-nav-btn"
+                                    type="button"
+                                    aria-label="上一個月">‹</button>
+                            <h4 id="checkin-month-label" aria-live="polite"></h4>
+                            <button id="checkin-next-month"
+                                    class="checkin-nav-btn"
+                                    type="button"
+                                    aria-label="下一個月">›</button>
+                        </div>
+
+                        <div class="checkin-weekdays" aria-hidden="true">
+                            <span>日</span>
+                            <span>一</span>
+                            <span>二</span>
+                            <span>三</span>
+                            <span>四</span>
+                            <span>五</span>
+                            <span>六</span>
+                        </div>
+
+                        <div id="checkin-calendar-grid"
+                             class="checkin-calendar-grid"
+                             role="list"
+                             aria-labelledby="checkin-month-label"></div>
+
+                        <div class="checkin-legend">
+                            <span>
+                                <i class="checkin-legend-dot" aria-hidden="true"></i>
+                                已簽到
+                            </span>
+                            <span class="checkin-today-legend">
+                                <i class="checkin-legend-outline" aria-hidden="true"></i>
+                                今天
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="checkin-month-summary">
+                        <div class="checkin-month-total">
+                            <span>本月累計簽到</span>
+                            <p>
+                                <strong id="checkin-month-count">—</strong>
+                                <span>天</span>
+                            </p>
+                        </div>
+                        <p id="checkin-status" class="checkin-status" role="status">
+                            登入後自動簽到。
+                        </p>
+                    </div>
+
+                    <div class="checkin-footer">
+                        <span class="checkin-timezone">以台北時間計算日期</span>
+                        <div class="checkin-actions">
+                            <button id="checkin-current-month"
+                                    class="checkin-text-btn"
+                                    type="button">回到本月</button>
+                            <button id="checkin-refresh-btn"
+                                    class="checkin-text-btn"
+                                    type="button">重新整理</button>
+                        </div>
+                    </div>
+                </section>
             </div>
 
-            <!-- 歷史紀錄 -->
-            <div id="history-container" class="dashboard-panel" style="display: none;">
-                <h2>📊 我的練習進度 (最近 7 次)</h2>
-                <canvas id="historyChart"></canvas>
-                <h3 style="margin-top: 20px;">📜 歷史明細</h3>
-                <ul id="history-list" class="history-list"><li>載入中...</li></ul>
+            <div id="favorites-container"
+                 class="dashboard-panel favorites-panel"
+                 style="display: none;"
+                 aria-labelledby="favorites-heading"
+                 tabindex="-1">
+
+                <div class="panel-heading">
+                    <div>
+                        <h2 id="favorites-heading">❤️ 我的最愛</h2>
+                        <p class="favorites-description">
+                            每一次 Perfect，都記錄著你的努力。
+                        </p>
+                    </div>
+                    <button id="favorites-close-btn"
+                            class="panel-close-btn"
+                            type="button"
+                            aria-label="關閉我的最愛">×</button>
+                </div>
+
+                <div class="favorites-hero">
+                    <span class="favorites-hero-icon" aria-hidden="true">♥</span>
+                    <div>
+                        <span class="favorites-hero-caption">你的動作偏好</span>
+                        <p id="favorites-summary" class="favorites-summary" role="status">
+                            正在統計你的 Perfect 紀錄…
+                        </p>
+                    </div>
+                </div>
+
+                <section id="favorites-chart-card"
+                         class="favorites-chart-card"
+                         aria-labelledby="favorites-chart-heading">
+                    <div class="favorites-section-heading">
+                        <h3 id="favorites-chart-heading">動作完成分布</h3>
+                        <span>累計 Perfect 次數</span>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="favoritesChart"
+                                role="img"
+                                aria-label="各動作累計 Perfect 次數，詳細次數見下方列表"></canvas>
+                    </div>
+                </section>
+
+                <section class="favorites-counts" aria-labelledby="favorites-counts-heading">
+                    <div class="favorites-section-heading">
+                        <h3 id="favorites-counts-heading">各動作累計次數</h3>
+                        <button id="favorites-refresh-btn"
+                                class="checkin-text-btn"
+                                type="button">重新整理</button>
+                    </div>
+                    <ul id="favorites-list" class="favorites-list"></ul>
+                </section>
+
+                <p class="favorites-footnote">
+                    統計所有練習紀錄，最常完成的動作會排在最前面。
+                </p>
             </div>
 
-            <!-- 全球排行榜 -->
             <div id="leaderboard-container" class="dashboard-panel" style="display: none;">
                 <h2>🏆 全球瑜珈大師排行榜</h2>
-                <ul id="leaderboard-list" class="leaderboard-list"><li>載入中...</li></ul>
+                <ul id="leaderboard-list" class="leaderboard-list">
+                    <li>載入中...</li>
+                </ul>
             </div>
         </div>
 
-        <!-- 下方動作卡片區域 (3 個動作) -->
         <main class="actions-section">
             <div class="section-title-wrap">
                 <h3>選擇訓練動作</h3>
                 <p>點擊動作卡片即可進入 AI 鏡頭偵測練習</p>
             </div>
-            <div id="actions-grid" class="actions-grid">
-                <!-- 3 個動作卡片由 JS 動態生成 -->
-            </div>
+            <div id="actions-grid" class="actions-grid"></div>
         </main>
     </div>
 
-    <!-- 3. 訓練偵測室 (Workout View) -->
-    <div id="workout-view" class="workout-container" style="display: none;">        
-        <!-- 左側控制面板 -->
+    <div id="workout-view" class="workout-container" style="display: none;">
         <div class="left-control-panel">
-            <button id="btn-back-home" class="back-home-btn">⬅️ 返回動作選單</button>
-            
+            <button id="btn-back-home" class="back-home-btn">
+                ⬅️ 返回動作選單
+            </button>
+
             <div class="quick-switch-container">
                 <div class="dropdown-wrapper">
                     <span class="search-icon">🔍</span>
                     <select id="quick-switch-select" class="quick-switch-dropdown">
                         <option value="tree">大樹式</option>
                         <option value="squat">深蹲</option>
-                        <option value="raise">平舉</option>
+                        <option value="Raise">平舉</option>
                     </select>
                 </div>
                 <button id="btn-tutorial" class="tutorial-btn">教學</button>
             </div>
 
-            <!-- 教學影片區塊 -->
             <div id="tutorial-video-container" class="hidden-container">
                 <video id="tutorial-video" width="100%" controls playsinline></video>
             </div>
         </div>
 
-        <!-- 鏡頭與提示詞區域 (置中主畫面) -->
         <div class="main-workout-area">
             <h2 id="current-workout-title">動作練習室</h2>
-            
+
             <div id="video-container">
                 <div id="loading">啟動鏡頭與 AI 模型中...</div>
                 <video id="video" width="800" height="450" autoplay playsinline muted></video>
                 <canvas id="canvas" width="800" height="450"></canvas>
             </div>
 
-            <!-- 鏡頭下方的提示詞 -->
             <div id="status-display" class="bottom-status-display">
                 <div id="pose-title" class="status-heading">動作偵測中</div>
-                
+
                 <div id="tree-info" class="status-content">
                     <span class="status-title">手部狀態：</span>
                     <span id="arm-status" class="status-value">等待姿勢...</span>
@@ -180,13 +320,13 @@
                     <span class="status-title">腿部狀態：</span>
                     <span id="leg-status" class="status-value">等待姿勢...</span>
                 </div>
-                
-                <div id="squat-info" class="status-content">
+
+                <div id="squat-info" class="status-content" style="display: none;">
                     <span class="status-title">身體狀態：</span>
                     <span id="squat-status" class="status-value">請開始深蹲</span>
                 </div>
 
-                <div id="generic-info" class="status-content ">
+                <div id="generic-info" class="status-content" style="display: none;">
                     <span class="status-title">動作提示：</span>
                     <span id="pose-results" class="status-value">等待偵測...</span>
                 </div>
@@ -196,21 +336,24 @@
         </div>
     </div>
 
-    <!-- 教學引導彈窗 (如果是從主選單進入前的彈窗，維持原樣) -->
     <div id="intro-modal" class="modal-overlay" style="display: none;">
         <div class="modal-card">
             <h2 id="intro-title">動作名稱</h2>
+
             <div id="intro-media-wrapper">
                 <video id="intro-video" autoplay loop muted playsinline style="display: none;"></video>
                 <img id="intro-image" alt="Pose Demonstration" style="display: none;">
             </div>
+
             <p id="intro-desc">動作簡介載入中...</p>
             <ul id="intro-tips" class="intro-tips-list"></ul>
-            <button id="intro-start-btn" class="start-btn" style="margin-top: 15px;">我準備好了，開始倒數！</button>
+
+            <button id="intro-start-btn" class="start-btn" style="margin-top: 15px;">
+                我準備好了，開始倒數！
+            </button>
         </div>
     </div>
 
-    <!-- 3 秒倒數計時遮罩 -->
     <div id="countdown-overlay" class="modal-overlay" style="display: none;">
         <div id="countdown-number" class="countdown-bounce">3</div>
     </div>
