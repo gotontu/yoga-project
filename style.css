@@ -1,24 +1,22 @@
 :root {
-    /* 🌟 粉紫與淺藍夢幻主色調 */
-    --primary-color: #8c7ae6;         /* 柔和薰衣草紫 */
-    --primary-light: #dcd6f7;         /* 淺粉紫 */
-    --secondary-color: #74b9ff;       /* 淺天空藍 */
-    --accent-pink: #fbc2eb;           /* 櫻花柔粉 */
-    --accent-lavender: #a6c1ee;       /* 柔和淺淡紫藍 */
+    --primary-color: #8c7ae6;    /* 柔和薰衣草紫 */
+    --primary-light: #dcd6f7;    /* 淺粉紫 */
+    --secondary-color: #74b9ff;  /* 淺天空藍 */
+    --accent-pink: #fbc2eb;      /* 櫻花柔粉 */
+    --accent-lavender: #a6c1ee;  /* 柔和淺淡紫藍 */
     --pink-purple-btn: linear-gradient(135deg, #e056fd 0%, #686de0 100%);
     --blue-purple-btn: linear-gradient(135deg, #a29bfe 0%, #74b9ff 100%);
-
-    /* 狀態提示色 */
-    --error-color: #ff6b81;           /* 柔和粉紅 */
-    --success-color: #2ed573;         /* 清新薄荷綠 */
-    
-    /* 淺色系背景與面板文字 */
-    --bg-color: #f7f5fc;              /* 輕柔淡粉紫底色 */
-    --panel-color: #ffffff;           /* 白色卡片底色 */
+    --error-color: #ff6b81;       /* 柔和粉紅 */
+    --success-color: #2ed573;     /* 清新薄荷綠 */
+    --error-text: #e8435a;
+    --success-text: #17a35a;
+    --warn-text: #c27803;
+    --bg-color: #f7f5fc;          /* 輕柔淡粉紫底色 */
+    --panel-color: #ffffff;       /* 白色卡片底色 */
     --card-bg: #ffffff;
-    --text-main: #2f3542;             /* 主要深色文字 */
-    --text-muted: #747d8c;            /* 輔助灰色文字 */
-    --border-color: #e2e8f0;          /* 邊框色 */
+    --text-main: #2f3542;          /* 主要深色文字 */
+    --text-muted: #747d8c;         /* 輔助灰色文字 */
+    --border-color: #e2e8f0;        /* 邊框色 */
 }
 
 body {
@@ -26,25 +24,43 @@ body {
     padding: 0;
     background-color: var(--bg-color);
     color: var(--text-main);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang TC", "Microsoft JhengHei", sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+        Roboto, "PingFang TC", "Microsoft JhengHei", sans-serif;
     overflow-x: hidden;
+}
+
+button:focus-visible,
+select:focus-visible {
+    outline: 3px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+.dropdown-wrapper:focus-within {
+    box-shadow: 0 0 0 3px rgba(140, 122, 230, 0.35);
 }
 
 /* =====================================
    🌟 1. 登入與封面頁 (Landing Page)
    ===================================== */
+
 #landing-page {
     position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: radial-gradient(circle at 10% 20%, #fbc2eb 0%, #a6c1ee 90%);
+    height: 100dvh;
+    background: radial-gradient(
+        circle at 10% 20%,
+        #fbc2eb 0%,
+        #a6c1ee 90%
+    );
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 100;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 /* 背景飄浮光暈 */
@@ -91,14 +107,19 @@ body {
 }
 
 @keyframes orbFloat {
-    0% { transform: translate(0, 0) scale(1); }
-    100% { transform: translate(40px, 30px) scale(1.1); }
+    0% {
+        transform: translate(0, 0) scale(1);
+    }
+    100% {
+        transform: translate(40px, 30px) scale(1.1);
+    }
 }
 
 /* 毛玻璃核心登入卡片 */
 .landing-glass-card {
     position: relative;
     z-index: 2;
+    margin: auto;
     background: rgba(255, 255, 255, 0.75);
     backdrop-filter: blur(25px);
     -webkit-backdrop-filter: blur(25px);
@@ -127,8 +148,12 @@ body {
 .yoga-badge-icon {
     width: 76px;
     height: 76px;
-    margin: 0 auto 16px auto;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(243, 229, 245, 0.6));
+    margin: 0 auto 16px;
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.9),
+        rgba(243, 229, 245, 0.6)
+    );
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -140,8 +165,14 @@ body {
 }
 
 @keyframes gentlePulse {
-    0%, 100% { transform: scale(1); box-shadow: 0 10px 20px rgba(155, 89, 182, 0.2); }
-    50% { transform: scale(1.06); box-shadow: 0 14px 28px rgba(224, 86, 253, 0.35); }
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 10px 20px rgba(155, 89, 182, 0.2);
+    }
+    50% {
+        transform: scale(1.06);
+        box-shadow: 0 14px 28px rgba(224, 86, 253, 0.35);
+    }
 }
 
 .tag-pill {
@@ -159,9 +190,10 @@ body {
 .hero-title {
     font-size: 2.8rem;
     font-weight: 900;
-    margin: 0 0 10px 0;
+    margin: 0 0 10px;
     background: linear-gradient(135deg, #7158e2 0%, #e056fd 100%);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     letter-spacing: -0.5px;
 }
@@ -170,7 +202,7 @@ body {
     font-size: 1rem;
     color: var(--text-muted);
     line-height: 1.5;
-    margin: 0 0 24px 0;
+    margin: 0 0 24px;
 }
 
 /* 特色晶片徽章 */
@@ -210,7 +242,8 @@ body {
     transition: transform 0.2s, box-shadow 0.2s;
 }
 
-.btn-google, .btn-google-card {
+.btn-google,
+.btn-google-card {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -221,7 +254,8 @@ body {
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
 }
 
-.btn-google:hover, .btn-google-card:hover {
+.btn-google:hover,
+.btn-google-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 10px 22px rgba(113, 88, 226, 0.2);
     border-color: #dcd6f7;
@@ -248,6 +282,7 @@ body {
 /* =====================================
    🌟 2. 首頁大廳 (Home View)
    ===================================== */
+
 #home-view {
     display: flex;
     flex-direction: column;
@@ -346,7 +381,7 @@ body {
 
 .section-title-wrap h3 {
     font-size: 1.9rem;
-    margin: 0 0 8px 0;
+    margin: 0 0 8px;
     color: #2d3436;
     font-weight: 800;
 }
@@ -419,7 +454,7 @@ body {
 .card-title {
     font-size: 1.3rem;
     font-weight: 700;
-    margin: 0 0 6px 0;
+    margin: 0 0 6px;
     color: #2d3436;
 }
 
@@ -445,6 +480,7 @@ body {
     border-radius: 24px;
     margin: 25px auto;
     max-width: 650px;
+    box-sizing: border-box;
     box-shadow: 0 16px 36px rgba(142, 68, 173, 0.12);
     border: 1px solid rgba(162, 155, 254, 0.25);
 }
@@ -473,6 +509,8 @@ body {
     border-radius: 50%;
     border: 3px solid white;
     margin-right: 20px;
+    object-fit: cover;
+    background: #ffffff;
 }
 
 .rank-tag {
@@ -507,15 +545,505 @@ body {
     margin-top: 6px;
 }
 
-.history-list, .leaderboard-list {
+/* 簽到日曆 */
+
+.checkin-section {
+    margin-top: 24px;
+    padding: 22px;
+    border: 1px solid #e8dff8;
+    border-radius: 22px;
+    background: linear-gradient(150deg, #faf7ff 0%, #f5f2fd 100%);
+}
+
+.checkin-section-header,
+.checkin-heading-group,
+.panel-heading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.checkin-section-header,
+.panel-heading {
+    justify-content: space-between;
+}
+
+.checkin-heading-group {
+    min-width: 0;
+}
+
+.checkin-heading-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: #ede5fb;
+    color: #8061c4;
+    font-size: 1.65rem;
+    line-height: 1;
+}
+
+.checkin-section h3 {
+    margin: 0 0 5px;
+    color: #45345f;
+    font-size: 1.12rem;
+    font-weight: 750;
+    letter-spacing: 0.02em;
+}
+
+.checkin-description {
+    margin: 0;
+    color: #786987;
+    font-size: 0.82rem;
+    line-height: 1.6;
+}
+
+.checkin-auto-badge {
+    flex-shrink: 0;
+    padding: 7px 10px;
+    border: 1px solid #e8def8;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.8);
+    color: #8066b5;
+    font-size: 0.72rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.checkin-auto-badge::before {
+    content: "";
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    margin-right: 6px;
+    border-radius: 50%;
+    background: #9c7bd8;
+    vertical-align: 2px;
+}
+
+.checkin-calendar {
+    max-width: 480px;
+    box-sizing: border-box;
+    margin: 20px auto 0;
+    padding: 18px;
+    border: 1px solid #eee8f7;
+    border-radius: 18px;
+    background: #ffffff;
+    box-shadow: 0 4px 18px rgba(105, 77, 148, 0.025);
+}
+
+.checkin-toolbar {
+    display: grid;
+    grid-template-columns: 38px 1fr 38px;
+    align-items: center;
+    gap: 12px;
+    max-width: 300px;
+    margin: 0 auto 20px;
+}
+
+.checkin-toolbar h4 {
+    margin: 0;
+    color: #4f3c6a;
+    font-size: 1.08rem;
+    font-weight: 700;
+    text-align: center;
+    white-space: nowrap;
+    letter-spacing: 0.03em;
+}
+
+.checkin-nav-btn,
+.checkin-text-btn,
+.panel-close-btn {
+    font: inherit;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.checkin-nav-btn {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    padding: 0 0 3px;
+    border: 1px solid #ece6f7;
+    border-radius: 12px;
+    background: #f8f5fe;
+    color: #8264ba;
+    font-size: 1.7rem;
+    line-height: 1;
+}
+
+.checkin-nav-btn:hover {
+    border-color: #cfc0ea;
+    background: #eee6fc;
+}
+
+.checkin-weekdays,
+.checkin-calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 7px;
+    text-align: center;
+}
+
+.checkin-weekdays {
+    margin-bottom: 10px;
+    color: #7b7187;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.checkin-weekdays span:first-child,
+.checkin-weekdays span:last-child {
+    color: #85669b;
+}
+
+.checkin-day {
+    position: relative;
+    display: grid;
+    place-items: center;
+    aspect-ratio: 1;
+    min-width: 0;
+    min-height: 32px;
+    box-sizing: border-box;
+    border-radius: 12px;
+    background: #f8f7fb;
+    color: #746a7f;
+    font-size: 0.87rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.checkin-day.is-checked-in {
+    background: linear-gradient(145deg, #eee5fc, #e6ddf8);
+    color: #7855b0;
+    font-weight: 750;
+}
+
+.checkin-day.is-checked-in > span:first-child {
+    transform: translateY(-3px);
+}
+
+.checkin-day.is-today {
+    box-shadow: inset 0 0 0 2px #9674d2;
+    color: #6f4ca6;
+    font-weight: 750;
+}
+
+.checkin-day.is-today:not(.is-checked-in) {
+    background: #ffffff;
+}
+
+.checkin-dot {
+    position: absolute;
+    bottom: 7px;
+    color: #a486d1;
+    font-size: 0.4rem;
+    line-height: 1;
+}
+
+.checkin-legend {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+    margin-top: 17px;
+    color: #7b6b89;
+    font-size: 0.78rem;
+}
+
+.checkin-legend > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.checkin-legend-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #a486d1;
+}
+
+.checkin-legend-outline {
+    width: 9px;
+    height: 9px;
+    box-sizing: border-box;
+    border: 1.5px solid #9674d2;
+    border-radius: 3px;
+}
+
+.checkin-month-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    margin-top: 20px;
+    padding: 0 2px;
+}
+
+.checkin-month-total > span {
+    color: #796687;
+    font-size: 0.82rem;
+}
+
+.checkin-month-total p {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+    margin: 3px 0 0;
+    color: #9c8aac;
+    font-size: 0.8rem;
+}
+
+.checkin-month-total strong {
+    color: #8c6cc1;
+    font-size: 1.9rem;
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+}
+
+.checkin-status {
+    max-width: 240px;
+    margin: 0;
+    color: #79618d;
+    font-size: 0.84rem;
+    line-height: 1.65;
+    text-align: right;
+}
+
+.checkin-status[data-state="error"] {
+    color: #975061;
+}
+
+.checkin-status[data-state="loading"] {
+    color: #7a6a8a;
+}
+
+.checkin-status[data-state="success"] {
+    color: #745197;
+}
+
+.checkin-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 17px;
+    padding-top: 14px;
+    border-top: 1px solid #eae2f5;
+}
+
+.checkin-timezone {
+    color: #7a6a8a;
+    font-size: 0.78rem;
+}
+
+.checkin-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.checkin-text-btn {
+    padding: 7px 9px;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    background: transparent;
+    color: #795b96;
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.checkin-text-btn:hover {
+    background: #ede5f9;
+    color: #76529e;
+}
+
+/* 我的最愛 */
+
+.panel-heading {
+    align-items: flex-start;
+    margin-bottom: 22px;
+}
+
+.panel-heading h2 {
+    margin: 0;
+    color: #443250;
+    font-size: 1.45rem;
+    text-align: left;
+}
+
+.panel-close-btn {
+    display: grid;
+    place-items: center;
+    flex: 0 0 34px;
+    height: 34px;
+    margin-top: -3px;
+    padding: 0 0 2px;
+    border: 1px solid #eee7f6;
+    border-radius: 50%;
+    background: #faf8fd;
+    color: #aa9cb5;
+    font-size: 1.5rem;
+    line-height: 1;
+}
+
+.panel-close-btn:hover {
+    background: #eee5f9;
+    color: #79559c;
+}
+
+.favorites-description {
+    margin: 9px 0 0;
+    color: #7e6e8b;
+    font-size: 0.85rem;
+    line-height: 1.6;
+}
+
+.favorites-hero {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 21px;
+    border: 1px solid #eadff7;
+    border-radius: 19px;
+    background: linear-gradient(125deg, #f4ecff, #f5f3ff);
+}
+
+.favorites-hero-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 52px;
+    height: 52px;
+    border-radius: 17px;
+    background: linear-gradient(135deg, #b494e7, #9582d7);
+    color: #ffffff;
+    font-size: 1.7rem;
+    box-shadow: 0 6px 14px rgba(150, 117, 195, 0.15);
+}
+
+.favorites-hero-caption {
+    color: #7c5b99;
+    font-size: 0.8rem;
+}
+
+.favorites-summary {
+    margin: 6px 0 0;
+    color: #745394;
+    font-size: 1.02rem;
+    font-weight: 700;
+    line-height: 1.65;
+    overflow-wrap: anywhere;
+}
+
+.favorites-chart-card {
+    margin-top: 23px;
+    padding: 20px 16px 15px;
+    border: 1px solid #eee7f5;
+    border-radius: 18px;
+    background: #ffffff;
+}
+
+.favorites-section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.favorites-section-heading h3 {
+    margin: 0;
+    color: #6a567c;
+    font-size: 0.92rem;
+    font-weight: 650;
+}
+
+.favorites-section-heading > span {
+    color: #7b6b89;
+    font-size: 0.78rem;
+}
+
+.chart-wrapper {
+    position: relative;
+    height: 240px;
+    max-width: 100%;
+}
+
+.favorites-counts {
+    margin-top: 22px;
+}
+
+.favorites-counts .favorites-section-heading {
+    margin-bottom: 9px;
+}
+
+.favorites-list,
+.leaderboard-list {
     list-style: none;
     padding: 0;
     margin: 0;
+}
+
+.favorites-list {
+    display: grid;
+    gap: 9px;
+}
+
+.favorites-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border: 1px solid #eee7f5;
+    border-radius: 13px;
+    background: #fdfbff;
+    color: #877291;
+    font-size: 0.85rem;
+}
+
+.favorites-list li > span {
+    flex: 1;
+    min-width: 0;
+}
+
+.favorites-list strong {
+    padding: 6px 10px;
+    border-radius: 9px;
+    background: #f0e8fa;
+    color: #75529a;
+    font-size: 0.8rem;
+    font-weight: 650;
+    white-space: nowrap;
+}
+
+.favorites-list li:first-child {
+    border-color: #e0d1f0;
+    background: #faf6ff;
+}
+
+.favorites-list li:first-child strong {
+    background: #eaddf8;
+    color: #7d55aa;
+}
+
+.favorites-footnote {
+    margin: 16px 0 0;
+    color: #7b7085;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    text-align: center;
+}
+
+.leaderboard-list {
     max-height: 240px;
     overflow-y: auto;
 }
 
-.history-list li, .leaderboard-list li {
+.leaderboard-list li {
     padding: 12px 6px;
     border-bottom: 1px solid #f1edff;
     color: #4a5568;
@@ -524,6 +1052,7 @@ body {
 /* =====================================
    🌟 4. 訓練偵測室 (Workout View)
    ===================================== */
+
 #workout-view {
     display: flex;
     justify-content: center;
@@ -532,14 +1061,15 @@ body {
     padding: 35px;
     gap: 40px;
     background-color: var(--bg-color);
-    max-width: 1200px; /* 加入最大寬度，避免在大螢幕上兩邊分太開 */
-    margin: 0 auto;    /* 配合最大寬度置中 */
+    max-width: 1200px;
+    margin: 0 auto;
+    box-sizing: border-box;
 }
 
 /* 左側控制面板 (固定在最左側) */
 .left-control-panel {
     width: 250px;
-    flex-shrink: 0; /* 🌟 重要：防止螢幕變小時左側按鈕區被壓縮變形 */
+    flex-shrink: 0;
     display: flex;
     flex-direction: column;
     gap: 15px;
@@ -621,25 +1151,28 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    flex: 1; /* 🌟 讓主畫面區佔滿右側剩餘空間 */
+    flex: 1;
+    min-width: 0;
 }
 
 #current-workout-title {
     font-size: 1.9rem;
-    margin: 0 0 15px 0;
+    margin: 0 0 15px;
     color: #2d3436;
     font-weight: 800;
 }
 
 #video-container {
     position: relative;
-    width: 800px;
-    height: 450px;
+    width: 100%;
+    max-width: 800px;
+    aspect-ratio: 16 / 9;
     border-radius: 20px;
     overflow: hidden;
     box-shadow: 0 12px 30px rgba(162, 155, 254, 0.22);
     background: #000;
     border: 4px solid #ffffff;
+    box-sizing: border-box;
 }
 
 #video {
@@ -647,10 +1180,13 @@ body {
 }
 
 #canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
     transform: scaleX(-1);
-    object-fit: cover; /* 確保畫布內容填滿容器比例 */
+    object-fit: cover;
 }
 
 /* 鏡頭下方提示面板 */
@@ -661,7 +1197,8 @@ body {
     padding: 24px;
     border-radius: 18px;
     color: var(--text-main);
-    width: 800px;
+    width: 100%;
+    max-width: 800px;
     box-sizing: border-box;
     box-shadow: 0 10px 25px rgba(162, 155, 254, 0.12);
     border-top: 6px solid #dcd6f7;
@@ -695,14 +1232,14 @@ body {
 
 .status-value {
     font-weight: 700;
-    font-size: 2.0rem;
+    font-size: 2rem;
 }
 
 .save-status-text {
     margin-top: 15px;
     font-size: 1.2rem;
     font-weight: 700;
-    color: var(--success-color);
+    color: var(--success-text);
 }
 
 #loading {
@@ -717,6 +1254,9 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
+    text-align: center;
+    padding: 20px;
+    box-sizing: border-box;
     font-size: 20px;
     z-index: 10;
 }
@@ -748,6 +1288,9 @@ body {
     padding: 32px;
     width: 90%;
     max-width: 480px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-sizing: border-box;
     text-align: center;
     box-shadow: 0 20px 45px rgba(142, 68, 173, 0.22);
     border: 1px solid rgba(162, 155, 254, 0.3);
@@ -770,7 +1313,8 @@ body {
     justify-content: center;
 }
 
-#intro-media-wrapper img, #intro-media-wrapper video {
+#intro-media-wrapper img,
+#intro-media-wrapper video {
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -796,9 +1340,14 @@ body {
 }
 
 @keyframes bounce {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.2); }
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.2);
+    }
 }
+
 
 /* =====================================
    🌟 動作介紹彈窗：「我準備好了，開始倒數！」按鈕
@@ -831,4 +1380,278 @@ body {
 #intro-start-btn:active {
     transform: translateY(1px);
     box-shadow: 0 4px 12px rgba(113, 88, 226, 0.4);
+}
+
+/* 手機與平板 */
+
+@media (max-width: 1100px) {
+    #workout-view {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 16px;
+        gap: 16px;
+    }
+
+    .left-control-panel {
+        width: 100%;
+        margin-top: 0;
+    }
+
+    .main-workout-area {
+        width: 100%;
+    }
+}
+
+@media (max-width: 700px) {
+    .top-navbar {
+        flex-direction: column;
+        gap: 10px;
+        padding: 12px 16px;
+    }
+
+    .nav-brand {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .nav-actions {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .actions-section {
+        padding: 24px 16px;
+    }
+
+    .dashboard-panel {
+        margin: 16px;
+        padding: 20px;
+    }
+
+    .profile-card {
+        padding: 18px;
+    }
+
+    .profile-card img {
+        width: 57px;
+        height: 57px;
+        margin-right: 14px;
+    }
+
+    .profile-card h3 {
+        overflow-wrap: anywhere;
+    }
+
+    .profile-stats-grid {
+        gap: 8px;
+    }
+
+    .stat-box {
+        min-width: 0;
+        padding: 13px 6px;
+        font-size: 0.76rem;
+    }
+
+    .stat-box strong {
+        font-size: 1.4rem;
+    }
+
+    .checkin-section {
+        padding: 17px 14px;
+        border-radius: 18px;
+    }
+
+    .checkin-section-header {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .checkin-heading-icon {
+        flex-basis: 38px;
+        height: 38px;
+        border-radius: 12px;
+        font-size: 1.4rem;
+    }
+
+    .checkin-section h3 {
+        font-size: 1rem;
+    }
+
+    .checkin-description {
+        font-size: 0.8rem;
+    }
+
+    .checkin-auto-badge {
+        margin-left: 50px;
+        padding: 5px 9px;
+        font-size: 0.75rem;
+    }
+
+    .checkin-calendar {
+        margin-top: 16px;
+        padding: 14px 10px;
+        border-radius: 14px;
+    }
+
+    .checkin-toolbar {
+        gap: 7px;
+        margin-bottom: 18px;
+    }
+
+    .checkin-toolbar h4 {
+        font-size: 0.97rem;
+    }
+
+    .checkin-weekdays,
+    .checkin-calendar-grid {
+        gap: 4px;
+    }
+
+    .checkin-day {
+        min-height: 29px;
+        border-radius: 8px;
+        font-size: 0.82rem;
+    }
+
+    .checkin-dot {
+        bottom: 4px;
+        font-size: 0.3rem;
+    }
+
+    .checkin-legend {
+        margin-top: 14px;
+        font-size: 0.75rem;
+    }
+
+    .checkin-month-summary {
+        gap: 12px;
+        margin-top: 17px;
+    }
+
+    .checkin-month-total {
+        flex-shrink: 0;
+    }
+
+    .checkin-month-total > span {
+        font-size: 0.78rem;
+    }
+
+    .checkin-month-total strong {
+        font-size: 1.7rem;
+    }
+
+    .checkin-status {
+        font-size: 0.8rem;
+    }
+
+    .checkin-footer {
+        gap: 6px;
+    }
+
+    .checkin-timezone {
+        font-size: 0.75rem;
+    }
+
+    .checkin-actions {
+        gap: 0;
+    }
+
+    .checkin-text-btn {
+        padding: 7px;
+        font-size: 0.78rem;
+    }
+
+    .panel-heading h2 {
+        font-size: 1.3rem;
+    }
+
+    .favorites-description {
+        font-size: 0.8rem;
+    }
+
+    .favorites-hero {
+        gap: 12px;
+        padding: 17px 14px;
+        border-radius: 16px;
+    }
+
+    .favorites-hero-icon {
+        flex-basis: 42px;
+        height: 42px;
+        border-radius: 13px;
+        font-size: 1.4rem;
+    }
+
+    .favorites-summary {
+        font-size: 0.9rem;
+    }
+
+    .favorites-chart-card {
+        padding: 17px 10px 12px;
+    }
+
+    .favorites-section-heading {
+        gap: 7px;
+    }
+
+    .favorites-section-heading h3 {
+        font-size: 0.84rem;
+    }
+
+    .favorites-section-heading > span {
+        font-size: 0.75rem;
+    }
+
+    .favorites-list li {
+        gap: 8px;
+        padding: 12px;
+        font-size: 0.79rem;
+    }
+
+    .favorites-list strong {
+        padding: 6px 8px;
+        font-size: 0.8rem;
+    }
+
+    .landing-glass-card {
+        padding: 32px 22px;
+    }
+
+    .hero-title {
+        font-size: 2.1rem;
+    }
+
+    .status-heading {
+        font-size: 1.4rem;
+    }
+
+    .status-content {
+        font-size: 1.05rem;
+    }
+
+    .status-value {
+        font-size: 1.4rem;
+    }
+
+    #current-workout-title {
+        font-size: 1.5rem;
+    }
+
+    .countdown-bounce {
+        font-size: 6rem;
+    }
+
+    #intro-media-wrapper {
+        height: 200px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .glow-orb,
+    .yoga-badge-icon,
+    .landing-glass-card,
+    .countdown-bounce {
+        animation: none;
+    }
 }
