@@ -12,6 +12,8 @@
 
     <link rel="stylesheet" href="style.css?v=20261020-ui2">
     <script type="module" src="script.js?v=20261020-ui2"></script>
+    <!-- EmailJS 郵件服務 SDK -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
 <body>
 
@@ -69,6 +71,7 @@
             </div>
 
             <div class="nav-actions">
+                <button id="btn-email-remind" class="nav-btn btn-purple">✉️ 提醒信</button>
                 <button id="btn-profile" aria-controls="profile-container" class="nav-btn btn-purple">
                     👤 個人中心
                 </button>
@@ -356,6 +359,39 @@
 
     <div id="countdown-overlay" class="modal-overlay" style="display: none;">
         <div id="countdown-number" class="countdown-bounce">3</div>
+    </div>
+
+    <!-- 郵件提醒設定彈窗 -->
+    <div id="email-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-card">
+            <h2>✉️ 每日運動郵件提醒</h2>
+            <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 20px;">
+                設定提醒時間，讓 AI Yoga Master 陪伴你養成規律習慣！
+            </p>
+    
+            <div style="text-align: left; margin-bottom: 15px;">
+                <label style="display: block; font-weight: bold; margin-bottom: 5px; color: var(--text-main);">接收信箱：</label>
+                <input type="email" id="remind-email-input" style="width: 100%; padding: 10px 14px; border-radius: 12px; border: 1px solid #dcdde1; box-sizing: border-box;" readonly>
+            </div>
+    
+            <div style="text-align: left; margin-bottom: 25px;">
+                <label style="display: block; font-weight: bold; margin-bottom: 5px; color: var(--text-main);">每日提醒時間：</label>
+                <input type="time" id="remind-time-input" value="20:00" style="width: 100%; padding: 10px 14px; border-radius: 12px; border: 1px solid #dcdde1; box-sizing: border-box;">
+            </div>
+    
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button id="btn-send-test-email" class="start-btn" style="background: linear-gradient(135deg, #a29bfe, #74b9ff); padding: 10px 18px; font-size: 0.95rem;">
+                    立即寄送測試信
+                </button>
+                <button id="btn-save-remind" class="start-btn" style="background: var(--pink-purple-btn); padding: 10px 22px; font-size: 0.95rem;">
+                    儲存設定
+                </button>
+            </div>
+    
+            <button id="btn-close-email-modal" style="background: transparent; border: none; color: #a4b0be; margin-top: 15px; cursor: pointer; text-decoration: underline;">
+                關閉
+            </button>
+        </div>
     </div>
 
 </body>
