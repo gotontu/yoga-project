@@ -1835,9 +1835,9 @@ function analyzeWarrior2(lm) {
         const bentAngle = isLeftFront ? leftKneeAngle : rightKneeAngle;
         const straightAngle = isLeftFront ? rightKneeAngle : leftKneeAngle;
 
-        if (bentAngle < 75) {
+        if (bentAngle < 115) {
             messages.push("前膝彎曲過多，請稍微抬高重心避免膝蓋受壓");
-        } else if (bentAngle > 115) {
+        } else if (bentAngle > 140) {
             messages.push("前腳膝蓋請再蹲低一些，靠近 90 度");
         }
 
