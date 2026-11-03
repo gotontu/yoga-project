@@ -193,7 +193,7 @@ const POSE_DATABASE = [
             "上半身向一側側傾，一手下放輕觸小腿或腳踝",
             "另一手筆直向上延伸，雙臂展開呈一直線"
         ]
-    }
+    },
     {
     id: "sideLunge",
     title: "側弓箭步",
@@ -728,6 +728,7 @@ function showPoseUI(poseId) {
         setText(triangleStatusDiv, "請雙腳張開打直，單手向下輕觸腳踝，另一手筆直上舉", "");
     }else if (norm === "sidelunge") {
     setText(sideLungeStatusDiv,"請正面站立，雙腳向左右分開，一側屈膝、另一側腿伸直","");
+    }
 }
 
 // ==========================================
@@ -1400,6 +1401,7 @@ function analyzeTriangle(lm) {
             ? `<span style="color: var(--success-text, #17a35a); font-weight: bold;">PERFECT! 保持三角式伸展 ${secondsLeft} 秒...</span>`
             : `<span style="color: var(--success-text, #17a35a); font-weight: bold;">PERFECT! 三角式完成！</span>`;
     }
+}
     
 // === 側弓箭步：正面站姿，左右皆可 ===
 function analyzeSideLunge(lm) {
@@ -1639,7 +1641,7 @@ function onResults(results) {
             raise: [raiseStatusDiv],
             sidestretch: [sideStretchStatusDiv],
             dancer: [dancerStatusDiv],
-            triangle: [triangleStatusDiv]
+            triangle: [triangleStatusDiv],
             sidelunge: [sideLungeStatusDiv],
         };
 
@@ -2270,8 +2272,8 @@ function renderFavoritesChart(poseCounts) {
         "深蹲": "#74b9ff",
         "平舉": "#81ecec",
         "側腰拉伸": "#fab1a0",
-        "舞王式": "#fd79a8" 
-        "三角式": "#ffeaa7"
+        "舞王式": "#fd79a8" ,
+        "三角式": "#ffeaa7",
         "側弓箭步": "#55efc4",
     };
 
