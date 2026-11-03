@@ -216,7 +216,7 @@ const POSE_DATABASE = [
         id: "crossArmStretch",
         title: "站立十字臂拉伸",
         subtitle: "Standing Cross-Body Shoulder Stretch",
-        img: "./cross-arm-stretch.png",
+        img: "image/cross-arm-stretch.png",
         videoUrl: "",
         desc: "站姿將一隻手臂橫跨胸前，另一手彎曲扶住上臂或手肘附近。",
         tips: [
@@ -230,7 +230,7 @@ const POSE_DATABASE = [
         id: "warrior2",
         title: "英雄二式",
         subtitle: "Warrior II",
-        img: "./images/warrior2.png",
+        img: "image/warrior2.png",
         videoUrl: "",
         desc: "英雄二式能強化下肢與核心力量，開展骨盆與胸腔，並增強專注力與身體平衡感。",
         tips: [
@@ -1606,17 +1606,14 @@ function analyzeSideLunge(lm) {
     }
 }
 
-// === 站立十字臂拉伸：左右皆可 ===
+// === 站立十字臂拉伸：僅判定上半身 ===
 function analyzeCrossArmStretch(lm) {
     const poseName = "站立十字臂拉伸";
 
     const requiredPoints = [
         [11, "左肩"], [12, "右肩"],
         [13, "左手肘"], [14, "右手肘"],
-        [15, "左手腕"], [16, "右手腕"],
-        [23, "左髖"], [24, "右髖"],
-        [25, "左膝"], [26, "右膝"],
-        [27, "左腳踝"], [28, "右腳踝"]
+        [15, "左手腕"], [16, "右手腕"]
     ];
 
     const visible = i => {
@@ -1651,36 +1648,31 @@ function analyzeCrossArmStretch(lm) {
     const W = canvasElement?.width || 800;
     const H = canvasElement?.height || 450;
 
-    const midpoint = (a, b) => ({
-        x: (a.x + b.x) / 2,
-        y: (a.y + b.y) / 2
-    });
-
     const distance = (a, b) =>
         Math.hypot(
             (a.x - b.x) * W,
             (a.y - b.y) * H
         );
 
-    const shoulders = midpoint(lm[11], lm[12]);
-    const hips = midpoint(lm[23], lm[24]);
-    const ankles = midpoint(lm[27], lm[28]);
-
     const shoulderWidth = distance(lm[11], lm[12]);
-    const torsoLength = distance(shoulders, hips);
+
+    const upperArmLength = (
+        distance(lm[11], lm[13]) +
+        distance(lm[12], lm[14])
+    ) / 2;
 
     if (
-        torsoLength < 1
-        || shoulderWidth < torsoLength * 0.3
-        || shoulders.y >= hips.y
+        shoulderWidth < 1
+        || upperArmLength < 1
+        || shoulderWidth < upperArmLength * 0.3
     ) {
         pauseDetection(
-            "請正面朝向鏡頭，讓肩膀與髖部清楚入鏡"
+            "請正面朝向鏡頭，讓雙肩與手臂清楚入鏡"
         );
         return;
     }
 
-    // 計算支撐手腕到被拉伸上臂的距離。
+    // 支撐手腕到被拉伸上臂的距離。
     const distanceToSegment = (p, a, b) => {
         const vx = (b.x - a.x) * W;
         const vy = (b.y - a.y) * H;
@@ -1699,23 +1691,22 @@ function analyzeCrossArmStretch(lm) {
         );
     };
 
-    // s/e/w：被拉伸側的肩、肘、腕。
-    // os/oe/ow：另一側的肩、肘、腕。
+    // s/e/w：被拉伸側；os/oe/ow：另一側。
     const checkArm = (s, e, w, os, oe, ow, side) => {
         const dx = (lm[os].x - lm[s].x) * W;
         const dy = (lm[os].y - lm[s].y) * H;
 
-        // 朝另一側肩膀的方向計算跨胸距離。
         const across = p => (
             (p.x - lm[s].x) * W * dx +
             (p.y - lm[s].y) * H * dy
         ) / shoulderWidth;
 
+        // 以肩寬作為胸前高度的比例尺。
         const nearChest = [e, w].every(i => {
             const offset = (lm[i].y - lm[s].y) * H;
 
-            return offset >= -torsoLength * 0.15
-                && offset <= torsoLength * 0.45;
+            return offset >= -shoulderWidth * 0.25
+                && offset <= shoulderWidth * 0.65;
         });
 
         const checks = [
@@ -1755,33 +1746,14 @@ function analyzeCrossArmStretch(lm) {
     const left = checkArm(11, 13, 15, 12, 14, 16, "左");
     const right = checkArm(12, 14, 16, 11, 13, 15, "右");
 
-    // 採用較符合姿勢的一側，提供對應提示。
     const selected =
         left.messages.length <= right.messages.length
             ? left : right;
 
-    const messages = [...selected.messages];
-
-    if (
-        hips.y >= ankles.y
-        || calculateAngle(lm[23], lm[25], lm[27]) < 145
-        || calculateAngle(lm[24], lm[26], lm[28]) < 145
-    ) {
-        messages.push("請站穩，雙膝自然伸直");
-    }
-
-    const torsoTilt = Math.atan2(
-        Math.abs(shoulders.x - hips.x) * W,
-        (hips.y - shoulders.y) * H
-    ) * 180 / Math.PI;
-
-    if (torsoTilt > 25) {
-        messages.push("請保持上半身直立，避免向側邊歪斜");
-    }
-
+    const messages = selected.messages;
     const isPerfect = messages.length === 0;
 
-    // 換手時重新計時，避免左右兩側秒數相加。
+    // 換手時重新計時。
     if (
         isPerfect
         && crossArmStretchHoldSide !== selected.side
@@ -1812,6 +1784,7 @@ function analyzeCrossArmStretch(lm) {
         messages.forEach(queueHint);
     }
 }
+
 // ===  英雄二式 (Warrior II) ===
 function analyzeWarrior2(lm) {
     const hipL = lm[23], kneeL = lm[25], ankleL = lm[27];
