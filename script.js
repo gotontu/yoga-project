@@ -51,14 +51,16 @@ const treeInfo = document.getElementById("tree-info");
 const squatInfo = document.getElementById("squat-info");
 const raiseInfo = document.getElementById("raise-info");
 const sideStretchInfo = document.getElementById("side-stretch-info");
-const dancerInfo = document.getElementById("dancer-info"); // 🌟 舞王式資訊區塊
+const dancerInfo = document.getElementById("dancer-info"); 
+const triangleInfo = document.getElementById("triangle-info");
 
 const armStatusDiv = document.getElementById("arm-status");
 const legStatusDiv = document.getElementById("leg-status");
 const squatStatusDiv = document.getElementById("squat-status");
 const raiseStatusDiv = document.getElementById("raise-status");
 const sideStretchStatusDiv = document.getElementById("side-stretch-status");
-const dancerStatusDiv = document.getElementById("dancer-status"); // 🌟 舞王式狀態顯示
+const dancerStatusDiv = document.getElementById("dancer-status");
+const triangleStatusDiv = document.getElementById("triangle-status");
 
 const saveStatusDiv = document.getElementById("save-status");
 
@@ -175,6 +177,19 @@ const POSE_DATABASE = [
             "單腳站穩伸直，另一腳曲膝向後上方抬起",
             "同側手向後握住腳背或腳踝，另一手向前平舉延展",
             "上半身自然前傾微挺胸，維持骨盆穩定不翻轉"
+        ]
+    },
+    {
+        id: "triangle",
+        title: "三角式",
+        subtitle: "Triangle Pose",
+        img: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=600&q=80",
+        videoUrl: "",
+        desc: "三角式能強化腿部與核心肌群，開展胸腔與髖關節，並深度延展大腿後側。",
+        tips: [
+            "雙腳張開約兩倍肩寬，雙腿膝蓋保持伸直不微彎",
+            "上半身向一側側傾，一手下放輕觸小腿或腳踝",
+            "另一手筆直向上延伸，雙臂展開呈一直線"
         ]
     }
 ];
@@ -672,6 +687,7 @@ function showPoseUI(poseId) {
     if (raiseInfo) raiseInfo.style.display = norm === "raise" ? "block" : "none";
     if (sideStretchInfo) sideStretchInfo.style.display = norm === "sidestretch" ? "block" : "none";
     if (dancerInfo) dancerInfo.style.display = norm === "dancer" ? "block" : "none";
+    if (triangleInfo) triangleInfo.style.display = norm === "triangle" ? "block" : "none";
 
     const poseItem = POSE_DATABASE.find(p => p.id.toLowerCase() === norm);
 
@@ -690,6 +706,8 @@ function showPoseUI(poseId) {
         setText(sideStretchStatusDiv, "請正面站立，單手上舉，向另一側緩慢側彎", "");
     } else if (norm === "dancer") {
         setText(dancerStatusDiv, "請站穩支撐腳，另一腳曲膝向後上方抬起並伸展前臂", "");
+    }else if (norm === "triangle") {
+        setText(triangleStatusDiv, "請雙腳張開打直，單手向下輕觸腳踝，另一手筆直上舉", "");
     }
 }
 
@@ -1297,6 +1315,72 @@ function analyzeDancer(lm) {
             : `<span style="color: var(--success-text, #17a35a); font-weight: bold;">PERFECT! 舞王式完成！</span>`;
     }
 }
+// ===  三角式 (Triangle Pose) ===
+function analyzeTriangle(lm) {
+    const shoulderL = lm[11];
+    const elbowL = lm[13];
+    const wristL = lm[15];
+
+    const shoulderR = lm[12];
+    const elbowR = lm[14];
+    const wristR = lm[16];
+
+    const hipL = lm[23];
+    const kneeL = lm[25];
+    const ankleL = lm[27];
+
+    const hipR = lm[24];
+    const kneeR = lm[26];
+    const ankleR = lm[28];
+
+    const leftKneeAngle = calculateAngle(hipL, kneeL, ankleL);
+    const rightKneeAngle = calculateAngle(hipR, kneeR, ankleR);
+
+    const messages = [];
+
+    // 1. 檢測雙腿是否打直（膝蓋夾角需大於 150 度）
+    if (leftKneeAngle < 150 || rightKneeAngle < 150) {
+        messages.push("雙腿膝蓋請盡量打直勿微彎");
+    }
+
+    // 2. 檢測身體是否側傾（雙肩高度差需明顯，下壓手腕低於臀部）
+    const isLeaningLeft = wristL.y > hipL.y && wristR.y < shoulderR.y;
+    const isLeaningRight = wristR.y > hipR.y && wristL.y < shoulderL.y;
+
+    if (!isLeaningLeft && !isLeaningRight) {
+        messages.push("請將上半身側傾，單手向下靠近腳踝，另一手向上延伸");
+    } else {
+        // 3. 檢測手臂是否伸展（檢查向上那隻手的手肘是否打直）
+        const upElbowAngle = isLeaningLeft 
+            ? calculateAngle(shoulderR, elbowR, wristR)
+            : calculateAngle(shoulderL, elbowL, wristL);
+
+        if (upElbowAngle < 140) {
+            messages.push("上方手臂請筆直向上伸展打直");
+        }
+    }
+
+    const isPerfect = messages.length === 0;
+
+    if (!isPerfect) {
+        if (triangleStatusDiv) {
+            triangleStatusDiv.innerHTML = messages
+                .map(msg => `<span style="color: var(--error-text, #e8435a);">${msg}</span>`)
+                .join("<br>");
+        }
+        messages.forEach(queueHint);
+    }
+
+    setStatus(isPerfect ? "perfect" : "error");
+
+    const secondsLeft = updateHold(isPerfect, "三角式");
+
+    if (isPerfect && triangleStatusDiv) {
+        triangleStatusDiv.innerHTML = secondsLeft > 0
+            ? `<span style="color: var(--success-text, #17a35a); font-weight: bold;">PERFECT! 保持三角式伸展 ${secondsLeft} 秒...</span>`
+            : `<span style="color: var(--success-text, #17a35a); font-weight: bold;">PERFECT! 三角式完成！</span>`;
+    }
+}
 
 // AI 偵測主迴圈
 function onResults(results) {
@@ -1350,6 +1434,9 @@ function onResults(results) {
                 case "dancer":
                     analyzeDancer(landmarks);
                     break;
+                case "triangle":
+                    analyzeTriangle(landmarks);
+                    break;
             }
         } catch (error) {
             console.warn("Pose processing error:", error);
@@ -1365,7 +1452,8 @@ function onResults(results) {
             squat: [squatStatusDiv],
             raise: [raiseStatusDiv],
             sidestretch: [sideStretchStatusDiv],
-            dancer: [dancerStatusDiv]
+            dancer: [dancerStatusDiv],
+            triangle: [triangleStatusDiv]
         };
 
         const currentOutputs = outputs[currentPoseMode.toLowerCase()] || [];
@@ -1995,7 +2083,8 @@ function renderFavoritesChart(poseCounts) {
         "深蹲": "#74b9ff",
         "平舉": "#81ecec",
         "側腰拉伸": "#fab1a0",
-        "舞王式": "#fd79a8" // 🌟 舞王式專屬粉紅配重
+        "舞王式": "#fd79a8" 
+        "三角式": "#ffeaa7"
     };
 
     favoritesChart = new Chart(ctx, {
