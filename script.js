@@ -53,6 +53,7 @@ const raiseInfo = document.getElementById("raise-info");
 const sideStretchInfo = document.getElementById("side-stretch-info");
 const dancerInfo = document.getElementById("dancer-info"); 
 const triangleInfo = document.getElementById("triangle-info");
+const warrior2Info = document.getElementById("warrior2-info");
 
 const armStatusDiv = document.getElementById("arm-status");
 const legStatusDiv = document.getElementById("leg-status");
@@ -65,6 +66,7 @@ const sideLungeInfo = document.getElementById("side-lunge-info");
 const sideLungeStatusDiv = document.getElementById("side-lunge-status");
 const crossArmStretchInfo = document.getElementById("cross-arm-stretch-info");
 const crossArmStretchStatusDiv = document.getElementById("cross-arm-stretch-status");
+const warrior2StatusDiv = document.getElementById("warrior2-status");
 
 const saveStatusDiv = document.getElementById("save-status");
 
@@ -224,6 +226,19 @@ const POSE_DATABASE = [
             "上半身保持直立，在舒適範圍內維持姿勢"
         ]
     },
+    {
+        id: "warrior2",
+        title: "英雄二式",
+        subtitle: "Warrior II",
+        img: "./images/warrior2.png",
+        videoUrl: "",
+        desc: "英雄二式能強化下肢與核心力量，開展骨盆與胸腔，並增強專注力與身體平衡感。",
+        tips: [
+            "雙腳大步張開，前腳屈膝約 90 度，後腳保持自然打直",
+            "上半身維持垂直地面不前傾，骨盆擺正",
+            "雙手向前後平行地面伸直，頭轉向看向前手方向"
+        ]
+    }
 ];
 
 // 共用工具
@@ -724,6 +739,7 @@ function showPoseUI(poseId) {
     if (triangleInfo) triangleInfo.style.display = norm === "triangle" ? "block" : "none";
     if (sideLungeInfo) {sideLungeInfo.style.display = norm === "sidelunge" ? "block" : "none";}
     if (crossArmStretchInfo) {crossArmStretchInfo.style.display =norm === "crossarmstretch" ? "block" : "none";}
+    if (warrior2Info) {warrior2Info.style.display = norm === "warrior2" ? "block" : "none";}
 
     
     const poseItem = POSE_DATABASE.find(p => p.id.toLowerCase() === norm);
@@ -749,6 +765,8 @@ function showPoseUI(poseId) {
         setText(sideLungeStatusDiv,"請正面站立，雙腳向左右分開，一側屈膝、另一側腿伸直","");
     }else if (norm === "crossarmstretch") {
         setText(crossArmStretchStatusDiv,"請將一手橫跨胸前，另一手彎曲扶住上臂附近","");
+    }else if (norm === "warrior2") {
+        setText(warrior2StatusDiv, "請雙腳大跨步，前膝彎曲、後腿打直，雙臂向兩側水平展開", "");
     }
 }
 
@@ -1794,6 +1812,77 @@ function analyzeCrossArmStretch(lm) {
         messages.forEach(queueHint);
     }
 }
+// ===  英雄二式 (Warrior II) ===
+function analyzeWarrior2(lm) {
+    const hipL = lm[23], kneeL = lm[25], ankleL = lm[27];
+    const hipR = lm[24], kneeR = lm[26], ankleR = lm[28];
+    const shoulderL = lm[11], elbowL = lm[13], wristL = lm[15];
+    const shoulderR = lm[12], elbowR = lm[14], wristR = lm[16];
+
+    const leftKneeAngle = calculateAngle(hipL, kneeL, ankleL);
+    const rightKneeAngle = calculateAngle(hipR, kneeR, ankleR);
+
+    // 判斷哪一隻腳是前屈膝腳（膝蓋彎曲在 80° ~ 125° 之間）
+    const isLeftFront = leftKneeAngle < 125 && rightKneeAngle > 145;
+    const isRightFront = rightKneeAngle < 125 && leftKneeAngle > 145;
+
+    const messages = [];
+
+    // 1. 下肢弓箭步檢測
+    if (!isLeftFront && !isRightFront) {
+        messages.push("請將雙腳大步跨開：前腳屈膝（約90度）、後腳打直");
+    } else {
+        const bentAngle = isLeftFront ? leftKneeAngle : rightKneeAngle;
+        const straightAngle = isLeftFront ? rightKneeAngle : leftKneeAngle;
+
+        if (bentAngle < 75) {
+            messages.push("前膝彎曲過多，請稍微抬高重心避免膝蓋受壓");
+        } else if (bentAngle > 115) {
+            messages.push("前腳膝蓋請再蹲低一些，靠近 90 度");
+        }
+
+        if (straightAngle < 145) {
+            messages.push("後腳請盡量伸直打穩");
+        }
+    }
+
+    // 2. 雙臂水平平舉檢測 (左右手臂上抬角度 70° ~ 115°，手肘打直 > 140°)
+    const armRaiseL = calculateAngle(hipL, shoulderL, elbowL);
+    const armRaiseR = calculateAngle(hipR, shoulderR, elbowR);
+    const elbowStraightL = calculateAngle(shoulderL, elbowL, wristL);
+    const elbowStraightR = calculateAngle(shoulderR, elbowR, wristR);
+
+    if (armRaiseL < 65 || armRaiseR < 65) {
+        messages.push("雙臂請向前後兩側抬起，與地面平行");
+    } else if (armRaiseL > 115 || armRaiseR > 115) {
+        messages.push("手臂抬太高了，保持水平即可");
+    }
+
+    if (elbowStraightL < 135 || elbowStraightR < 135) {
+        messages.push("雙手手肘請盡量打直延伸");
+    }
+
+    const isPerfect = messages.length === 0;
+
+    if (!isPerfect) {
+        if (warrior2StatusDiv) {
+            warrior2StatusDiv.innerHTML = messages
+                .map(msg => `<span style="color: var(--error-text, #e8435a);">${msg}</span>`)
+                .join("<br>");
+        }
+        messages.forEach(queueHint);
+    }
+
+    setStatus(isPerfect ? "perfect" : "error");
+
+    const secondsLeft = updateHold(isPerfect, "英雄二式");
+
+    if (isPerfect && warrior2StatusDiv) {
+        warrior2StatusDiv.innerHTML = secondsLeft > 0
+            ? `<span style="color: var(--success-text, #17a35a); font-weight: bold;">PERFECT! 維持穩固英雄二式 ${secondsLeft} 秒...</span>`
+            : `<span style="color: var(--success-text, #17a35a); font-weight: bold;">PERFECT! 英雄二式完成！</span>`;
+    }
+}
 
 
 // AI 偵測主迴圈
@@ -1857,6 +1946,9 @@ function onResults(results) {
                 case "crossarmstretch":
                     analyzeCrossArmStretch(landmarks);
                     break;
+                case "warrior2":
+                    analyzeWarrior2(landmarks);
+                    break;
             }
         } catch (error) {
             console.warn("Pose processing error:", error);
@@ -1876,6 +1968,7 @@ function onResults(results) {
             triangle: [triangleStatusDiv],
             sidelunge: [sideLungeStatusDiv],
             crossarmstretch: [crossArmStretchStatusDiv],
+            warrior2: [warrior2StatusDiv]
         };
 
         const currentOutputs = outputs[currentPoseMode.toLowerCase()] || [];
@@ -2509,6 +2602,7 @@ function renderFavoritesChart(poseCounts) {
         "三角式": "#ffeaa7",
         "側弓箭步": "#55efc4",
         "站立十字臂拉伸": "#a3cb38",
+        "英雄二式": "#ff7675"
     };
 
     favoritesChart = new Chart(ctx, {
