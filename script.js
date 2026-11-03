@@ -727,7 +727,7 @@ function showPoseUI(poseId) {
     }else if (norm === "triangle") {
         setText(triangleStatusDiv, "請雙腳張開打直，單手向下輕觸腳踝，另一手筆直上舉", "");
     }else if (norm === "sidelunge") {
-    setText(sideLungeStatusDiv,"請正面站立，雙腳向左右分開，一側屈膝、另一側腿伸直","");
+        setText(sideLungeStatusDiv,"請正面站立，雙腳向左右分開，一側屈膝、另一側腿伸直","");
     }
 }
 
@@ -1515,10 +1515,10 @@ function analyzeSideLunge(lm) {
         messages.push("請正面朝向鏡頭，讓雙腳都站在地面");
     }
 
-    // 屈膝側的辨識範圍：75°～120°。
-    if (bentAngle > 120) {
+    // 屈膝側的辨識範圍：110°～145°。
+    if (bentAngle > 145) {
         messages.push("請在舒適範圍內，將一側膝蓋再彎一些");
-    } else if (bentAngle < 75) {
+    } else if (bentAngle < 110) {
         messages.push("請稍微抬高臀部，減少屈膝幅度");
     }
 
