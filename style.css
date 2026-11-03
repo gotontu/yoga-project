@@ -1655,3 +1655,28 @@ select:focus-visible {
         animation: none;
     }
 }
+
+/* 動作選單與教學按鈕 */
+.quick-switch-container {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+}
+
+.dropdown-wrapper {
+    min-width: 0;
+    padding: 10px 12px;
+    box-sizing: border-box;
+}
+
+.quick-switch-dropdown {
+    min-width: 0;
+    width: 100%;
+}
+
+.tutorial-btn {
+    padding: 10px 12px;
+    white-space: nowrap;
+}
