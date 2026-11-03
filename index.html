@@ -10,8 +10,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5/pose.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 
-    <link rel="stylesheet" href="style.css?v=20261020-ui2">
-    <script type="module" src="script.js?v=20261020-ui2"></script>
+    <link rel="stylesheet" href="style.css?v=20261103-switch2">
+    <script type="module" src="script.js?v=20261103-switch2"></script>
     <!-- EmailJS 郵件服務 SDK -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
@@ -294,14 +294,23 @@
                         <option value="tree">大樹式</option>
                         <option value="squat">深蹲</option>
                         <option value="Raise">平舉</option>
+                        <option value="sideStretch">側腰拉伸</option>
                     </select>
                 </div>
                 <button id="btn-tutorial" class="tutorial-btn">教學</button>
             </div>
 
             <div id="tutorial-video-container" class="hidden-container">
-                <video id="tutorial-video" width="100%" controls playsinline></video>
+                <iframe
+                    id="tutorial-video"
+                    title="動作教學影片"
+                    style="width: 100%; height: 420px; border: 0; display: block; border-radius: 12px;"
+                    allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                    referrerpolicy="strict-origin-when-cross-origin"
+                    allowfullscreen>
+                </iframe>
             </div>
+            
         </div>
 
         <div class="main-workout-area">
@@ -329,11 +338,16 @@
                     <span id="squat-status" class="status-value">請開始深蹲</span>
                 </div>
 
-                <div id="generic-info" class="status-content" style="display: none;">
+                <div id="raise-info" class="status-content" style="display: none;">
                     <span class="status-title">動作提示：</span>
-                    <span id="pose-results" class="status-value">等待偵測...</span>
+                    <span id="raise-status" class="status-value">等待偵測...</span>
                 </div>
 
+                <div id="side-stretch-info" class="status-content" style="display: none;">
+                    <span class="status-title">側腰拉伸提示：</span>
+                    <span id="side-stretch-status" class="status-value">等待偵測...</span>
+                </div>
+                
                 <div id="save-status" class="save-status-text"></div>
             </div>
         </div>
@@ -366,7 +380,7 @@
         <div class="modal-card">
             <h2>✉️ 每日運動郵件提醒</h2>
             <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 20px;">
-                設定提醒時間，讓 AI Yoga Master 陪伴你養成規律習慣！
+                設定提醒時間，讓 Yoga Master 陪伴你養成規律習慣！
             </p>
     
             <div style="text-align: left; margin-bottom: 15px;">
