@@ -230,7 +230,7 @@ const POSE_DATABASE = [
         id: "warrior2",
         title: "英雄二式",
         subtitle: "Warrior II",
-        img: "image/warrior2.png",
+        img: "image/hero.png",
         videoUrl: "",
         desc: "英雄二式能強化下肢與核心力量，開展骨盆與胸腔，並增強專注力與身體平衡感。",
         tips: [
