@@ -168,7 +168,7 @@ const POSE_DATABASE = [
         id: "dancer",
         title: "舞王式",
         subtitle: "Dancer Pose",
-        img: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=600&q=80",
+        img: "https://as.chdev.tw/web/article/photos/1/6/8/72da4784cdcf14ac1750a1901cabf2eaa6576b0f.jpg",
         videoUrl: "",
         desc: "舞王式能深度延展胸腔與肩膀、伸展大腿前側，並大幅增強單腳平衡感與核心力量。",
         tips: [
