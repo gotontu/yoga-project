@@ -1565,7 +1565,7 @@ function analyzeSideLunge(lm) {
         messages.forEach(queueHint);
     }
 }
-}
+
 
 // AI 偵測主迴圈
 function onResults(results) {
