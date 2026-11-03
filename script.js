@@ -120,7 +120,7 @@ const POSE_DATABASE = [
         id: "tree",
         title: "大樹式",
         subtitle: "Tree Pose",
-        img: "./image/tree.png",
+        img: "image/tree.png",
         videoUrl: "https://www.youtube.com/embed/jMez5L0w4yI",
         desc: "大樹式能訓練下肢肌力、單腳平衡感與專注度。",
         tips: [
@@ -133,7 +133,7 @@ const POSE_DATABASE = [
         id: "squat",
         title: "深蹲",
         subtitle: "Squat",
-        img: "./image/squat.png",
+        img: "image/squat.png",
         videoUrl: "https://www.youtube.com/embed/PpP98TMiVKY",
         desc: "深蹲能強化臀大肌、股四頭肌與核心穩定度。",
         tips: [
@@ -146,7 +146,7 @@ const POSE_DATABASE = [
         id: "Raise",
         title: "平舉",
         subtitle: "Raise",
-        img: "./image/raise.png",
+        img: "image/raise.png",
         videoUrl: "",
         desc: "平舉能增強肩膀三角肌與上肢控制力。",
         tips: [
@@ -159,7 +159,7 @@ const POSE_DATABASE = [
         id: "sideStretch",
         title: "側腰拉伸",
         subtitle: "Standing Side Stretch",
-        img: "./image/sidelength.png",
+        img: "image/sidelength.png",
         videoUrl: "",
         desc: "站姿側腰拉伸：單手向上延伸，身體緩慢向另一側側彎。",
         tips: [
@@ -172,7 +172,7 @@ const POSE_DATABASE = [
         id: "dancer",
         title: "舞王式",
         subtitle: "Dancer Pose",
-        img: "./image/dance.png",
+        img: "image/dance.png",
         videoUrl: "",
         desc: "舞王式能深度延展胸腔與肩膀、伸展大腿前側，並大幅增強單腳平衡感與核心力量。",
         tips: [
@@ -185,7 +185,7 @@ const POSE_DATABASE = [
         id: "triangle",
         title: "三角式",
         subtitle: "Triangle Pose",
-        img: "./image/triangle.png",
+        img: "image/triangle.png",
         videoUrl: "",
         desc: "三角式能強化腿部與核心肌群，開展胸腔與髖關節，並深度延展大腿後側。",
         tips: [
@@ -198,7 +198,7 @@ const POSE_DATABASE = [
     id: "sideLunge",
     title: "側弓箭步",
     subtitle: "Side Lunge",
-    img: "./image/sidelunge.png",
+    img: "image/sidelunge.png",
     videoUrl: "",
     desc: "雙腳向左右分開，一側屈膝，另一側腿伸直，重心移向屈膝側。",
     tips: [
