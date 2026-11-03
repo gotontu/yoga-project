@@ -63,6 +63,8 @@ const dancerStatusDiv = document.getElementById("dancer-status");
 const triangleStatusDiv = document.getElementById("triangle-status");
 const sideLungeInfo = document.getElementById("side-lunge-info");
 const sideLungeStatusDiv = document.getElementById("side-lunge-status");
+const crossArmStretchInfo = document.getElementById("cross-arm-stretch-info");
+const crossArmStretchStatusDiv = document.getElementById("cross-arm-stretch-status");
 
 const saveStatusDiv = document.getElementById("save-status");
 
@@ -195,19 +197,33 @@ const POSE_DATABASE = [
         ]
     },
     {
-    id: "sideLunge",
-    title: "側弓箭步",
-    subtitle: "Side Lunge",
-    img: "image/sidelunge.png",
-    videoUrl: "",
-    desc: "雙腳向左右分開，一側屈膝，另一側腿伸直，重心移向屈膝側。",
-    tips: [
-        "正面朝向鏡頭，讓肩膀、髖部、膝蓋與雙腳完整入鏡",
-        "雙腳向左右分開，一側屈膝，另一側腿自然伸直",
-        "雙手可於胸前合十，上半身保持穩定",
-        "在舒適範圍內維持姿勢，左右兩側皆可練習"
-    ]
-},
+        id: "sideLunge",
+        title: "側弓箭步",
+        subtitle: "Side Lunge",
+        img: "image/sidelunge.png",
+        videoUrl: "",
+        desc: "雙腳向左右分開，一側屈膝，另一側腿伸直，重心移向屈膝側。",
+        tips: [
+            "正面朝向鏡頭，讓肩膀、髖部、膝蓋與雙腳完整入鏡",
+            "雙腳向左右分開，一側屈膝，另一側腿自然伸直",
+            "雙手可於胸前合十，上半身保持穩定",
+            "在舒適範圍內維持姿勢，左右兩側皆可練習"
+        ]
+    },
+    {
+        id: "crossArmStretch",
+        title: "站立十字臂拉伸",
+        subtitle: "Standing Cross-Body Shoulder Stretch",
+        img: "./cross-arm-stretch.png",
+        videoUrl: "",
+        desc: "站姿將一隻手臂橫跨胸前，另一手彎曲扶住上臂或手肘附近。",
+        tips: [
+            "正面朝向鏡頭，讓雙手、肩膀、髖部與雙腳完整入鏡",
+            "將一隻手臂橫跨胸前，手肘自然伸直",
+            "另一手彎曲，扶住被拉伸手臂的上臂或手肘附近",
+            "上半身保持直立，在舒適範圍內維持姿勢"
+        ]
+    },
 ];
 
 // 共用工具
@@ -292,6 +308,7 @@ let speechQueue = [];
 let pose = null;
 let camera = null;
 let sideLungeHoldSide = null;
+let crossArmStretchHoldSide = null;
 
 // 未完成登入或查詢前，也先顯示完整月曆。
 renderCheckInCalendar();
@@ -706,6 +723,8 @@ function showPoseUI(poseId) {
     if (dancerInfo) dancerInfo.style.display = norm === "dancer" ? "block" : "none";
     if (triangleInfo) triangleInfo.style.display = norm === "triangle" ? "block" : "none";
     if (sideLungeInfo) {sideLungeInfo.style.display = norm === "sidelunge" ? "block" : "none";}
+    if (crossArmStretchInfo) {crossArmStretchInfo.style.display =norm === "crossarmstretch" ? "block" : "none";}
+
     
     const poseItem = POSE_DATABASE.find(p => p.id.toLowerCase() === norm);
 
@@ -728,6 +747,8 @@ function showPoseUI(poseId) {
         setText(triangleStatusDiv, "請雙腳張開打直，單手向下輕觸腳踝，另一手筆直上舉", "");
     }else if (norm === "sidelunge") {
         setText(sideLungeStatusDiv,"請正面站立，雙腳向左右分開，一側屈膝、另一側腿伸直","");
+    }else if (norm === "crossarmstretch") {
+        setText(crossArmStretchStatusDiv,"請將一手橫跨胸前，另一手彎曲扶住上臂附近","");
     }
 }
 
@@ -867,6 +888,7 @@ function resetHold() {
     perfectStartTime = 0;
     hasSavedThisRep = false;
     sideLungeHoldSide = null;
+    crossArmStretchHoldSide = null;
 }
 
 function updateHold(isPerfect, poseNameChinese) {
@@ -1566,6 +1588,213 @@ function analyzeSideLunge(lm) {
     }
 }
 
+// === 站立十字臂拉伸：左右皆可 ===
+function analyzeCrossArmStretch(lm) {
+    const poseName = "站立十字臂拉伸";
+
+    const requiredPoints = [
+        [11, "左肩"], [12, "右肩"],
+        [13, "左手肘"], [14, "右手肘"],
+        [15, "左手腕"], [16, "右手腕"],
+        [23, "左髖"], [24, "右髖"],
+        [25, "左膝"], [26, "右膝"],
+        [27, "左腳踝"], [28, "右腳踝"]
+    ];
+
+    const visible = i => {
+        const p = lm[i];
+
+        return p
+            && Number.isFinite(p.x)
+            && Number.isFinite(p.y)
+            && p.x >= 0 && p.x <= 1
+            && p.y >= 0 && p.y <= 1
+            && (p.visibility ?? 0) >= 0.5;
+    };
+
+    const pauseDetection = message => {
+        setText(crossArmStretchStatusDiv, message, COLOR_ERR);
+        setStatus("neutral");
+        updateHold(false, poseName);
+        queueHint(message);
+    };
+
+    const missingParts = requiredPoints
+        .filter(([i]) => !visible(i))
+        .map(([, name]) => name);
+
+    if (missingParts.length > 0) {
+        pauseDetection(
+            `請讓${missingParts.join("、")}完整入鏡`
+        );
+        return;
+    }
+
+    const W = canvasElement?.width || 800;
+    const H = canvasElement?.height || 450;
+
+    const midpoint = (a, b) => ({
+        x: (a.x + b.x) / 2,
+        y: (a.y + b.y) / 2
+    });
+
+    const distance = (a, b) =>
+        Math.hypot(
+            (a.x - b.x) * W,
+            (a.y - b.y) * H
+        );
+
+    const shoulders = midpoint(lm[11], lm[12]);
+    const hips = midpoint(lm[23], lm[24]);
+    const ankles = midpoint(lm[27], lm[28]);
+
+    const shoulderWidth = distance(lm[11], lm[12]);
+    const torsoLength = distance(shoulders, hips);
+
+    if (
+        torsoLength < 1
+        || shoulderWidth < torsoLength * 0.3
+        || shoulders.y >= hips.y
+    ) {
+        pauseDetection(
+            "請正面朝向鏡頭，讓肩膀與髖部清楚入鏡"
+        );
+        return;
+    }
+
+    // 計算支撐手腕到被拉伸上臂的距離。
+    const distanceToSegment = (p, a, b) => {
+        const vx = (b.x - a.x) * W;
+        const vy = (b.y - a.y) * H;
+        const px = (p.x - a.x) * W;
+        const py = (p.y - a.y) * H;
+
+        const t = Math.max(0, Math.min(
+            1,
+            (px * vx + py * vy) /
+                Math.max(vx * vx + vy * vy, 1)
+        ));
+
+        return Math.hypot(
+            px - t * vx,
+            py - t * vy
+        );
+    };
+
+    // s/e/w：被拉伸側的肩、肘、腕。
+    // os/oe/ow：另一側的肩、肘、腕。
+    const checkArm = (s, e, w, os, oe, ow, side) => {
+        const dx = (lm[os].x - lm[s].x) * W;
+        const dy = (lm[os].y - lm[s].y) * H;
+
+        // 朝另一側肩膀的方向計算跨胸距離。
+        const across = p => (
+            (p.x - lm[s].x) * W * dx +
+            (p.y - lm[s].y) * H * dy
+        ) / shoulderWidth;
+
+        const nearChest = [e, w].every(i => {
+            const offset = (lm[i].y - lm[s].y) * H;
+
+            return offset >= -torsoLength * 0.15
+                && offset <= torsoLength * 0.45;
+        });
+
+        const checks = [
+            [
+                calculateAngle(lm[s], lm[e], lm[w]) >= 140,
+                "請將橫過胸前的手臂自然伸直"
+            ],
+            [
+                across(lm[w]) >= shoulderWidth * 0.8
+                    && across(lm[e]) >= shoulderWidth * 0.25,
+                "請將一隻手臂橫跨胸前，伸向另一側"
+            ],
+            [
+                nearChest,
+                "請將橫跨的手臂維持在胸前、接近肩膀高度"
+            ],
+            [
+                calculateAngle(lm[os], lm[oe], lm[ow]) <= 135
+                    && lm[ow].y < lm[oe].y,
+                "請用另一手彎曲手肘，將前臂抬起"
+            ],
+            [
+                distanceToSegment(lm[ow], lm[s], lm[e])
+                    <= shoulderWidth * 0.55,
+                "請讓另一手靠近被拉伸手臂的上臂或手肘附近"
+            ]
+        ];
+
+        return {
+            side,
+            messages: checks
+                .filter(([passed]) => !passed)
+                .map(([, message]) => message)
+        };
+    };
+
+    const left = checkArm(11, 13, 15, 12, 14, 16, "左");
+    const right = checkArm(12, 14, 16, 11, 13, 15, "右");
+
+    // 採用較符合姿勢的一側，提供對應提示。
+    const selected =
+        left.messages.length <= right.messages.length
+            ? left : right;
+
+    const messages = [...selected.messages];
+
+    if (
+        hips.y >= ankles.y
+        || calculateAngle(lm[23], lm[25], lm[27]) < 145
+        || calculateAngle(lm[24], lm[26], lm[28]) < 145
+    ) {
+        messages.push("請站穩，雙膝自然伸直");
+    }
+
+    const torsoTilt = Math.atan2(
+        Math.abs(shoulders.x - hips.x) * W,
+        (hips.y - shoulders.y) * H
+    ) * 180 / Math.PI;
+
+    if (torsoTilt > 25) {
+        messages.push("請保持上半身直立，避免向側邊歪斜");
+    }
+
+    const isPerfect = messages.length === 0;
+
+    // 換手時重新計時，避免左右兩側秒數相加。
+    if (
+        isPerfect
+        && crossArmStretchHoldSide !== selected.side
+    ) {
+        resetHold();
+        crossArmStretchHoldSide = selected.side;
+    }
+
+    setStatus(isPerfect ? "perfect" : "error");
+
+    const secondsLeft = updateHold(isPerfect, poseName);
+
+    if (isPerfect) {
+        setText(
+            crossArmStretchStatusDiv,
+            secondsLeft > 0
+                ? `PERFECT！拉伸${selected.side}臂，請維持 ${secondsLeft} 秒...`
+                : "PERFECT！站立十字臂拉伸完成！",
+            COLOR_OK
+        );
+    } else {
+        setText(
+            crossArmStretchStatusDiv,
+            messages.join("\n"),
+            COLOR_ERR
+        );
+
+        messages.forEach(queueHint);
+    }
+}
+
 
 // AI 偵測主迴圈
 function onResults(results) {
@@ -1625,6 +1854,9 @@ function onResults(results) {
                 case "sidelunge":
                     analyzeSideLunge(landmarks);
                     break;
+                case "crossarmstretch":
+                    analyzeCrossArmStretch(landmarks);
+                    break;
             }
         } catch (error) {
             console.warn("Pose processing error:", error);
@@ -1643,6 +1875,7 @@ function onResults(results) {
             dancer: [dancerStatusDiv],
             triangle: [triangleStatusDiv],
             sidelunge: [sideLungeStatusDiv],
+            crossarmstretch: [crossArmStretchStatusDiv],
         };
 
         const currentOutputs = outputs[currentPoseMode.toLowerCase()] || [];
@@ -2275,6 +2508,7 @@ function renderFavoritesChart(poseCounts) {
         "舞王式": "#fd79a8" ,
         "三角式": "#ffeaa7",
         "側弓箭步": "#55efc4",
+        "站立十字臂拉伸": "#a3cb38",
     };
 
     favoritesChart = new Chart(ctx, {
