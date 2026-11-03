@@ -220,7 +220,7 @@ const POSE_DATABASE = [
         videoUrl: "",
         desc: "站姿將一隻手臂橫跨胸前，另一手彎曲扶住上臂或手肘附近。",
         tips: [
-            "正面朝向鏡頭，讓雙手、肩膀、髖部與雙腳完整入鏡",
+            "正面朝向鏡頭，讓雙肩、手肘與手腕完整入鏡",
             "將一隻手臂橫跨胸前，手肘自然伸直",
             "另一手彎曲，扶住被拉伸手臂的上臂或手肘附近",
             "上半身保持直立，在舒適範圍內維持姿勢"
@@ -1859,8 +1859,38 @@ function analyzeWarrior2(lm) {
 
 
 // AI 偵測主迴圈
+function drawPoseForCurrentMode(lm, preview = false) {
+    const upperBodyOnly =
+        selectedPoseId.toLowerCase() === "crossarmstretch";
+
+    const connections = upperBodyOnly
+        ? [
+            [11, 12],
+            [11, 13], [13, 15],
+            [12, 14], [14, 16]
+        ]
+        : POSE_CONNECTIONS;
+
+    const points = upperBodyOnly
+        ? [11, 12, 13, 14, 15, 16]
+            .map(i => lm[i])
+            .filter(Boolean)
+        : lm;
+
+    drawConnectors(canvasCtx, lm, connections, {
+        color: preview ? "#7f8c8d" : "#00FF00",
+        lineWidth: preview ? 2 : 4
+    });
+
+    drawLandmarks(canvasCtx, points, {
+        color: preview ? "#bdc3c7" : "#FF0000",
+        lineWidth: preview ? 1 : 2
+    });
+}
+
 function onResults(results) {
     if (!workoutView || workoutView.style.display === "none") return;
+
     if (loadingDiv && loadingDiv.style.display !== "none") {
         loadingDiv.style.display = "none";
     }
@@ -1868,59 +1898,116 @@ function onResults(results) {
     if (!canvasCtx || !canvasElement) return;
 
     canvasCtx.save();
-    canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-    canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
-    const countdownOverlay = document.getElementById("countdown-overlay");
-    const isCountdownActive = countdownOverlay && countdownOverlay.style.display === "flex";
+    canvasCtx.clearRect(
+        0,
+        0,
+        canvasElement.width,
+        canvasElement.height
+    );
 
+    canvasCtx.drawImage(
+        results.image,
+        0,
+        0,
+        canvasElement.width,
+        canvasElement.height
+    );
+
+    const landmarks = results.poseLandmarks;
+    const mode = currentPoseMode.toLowerCase();
+
+    // 十字臂拉伸只顯示肩膀、手肘與手腕。
+    const upperBodyOnly =
+        selectedPoseId.toLowerCase() === "crossarmstretch";
+
+    const connections = upperBodyOnly
+        ? [
+            [11, 12],
+            [11, 13], [13, 15],
+            [12, 14], [14, 16]
+        ]
+        : POSE_CONNECTIONS;
+
+    const points = upperBodyOnly && landmarks
+        ? [11, 12, 13, 14, 15, 16]
+            .map(i => landmarks[i])
+            .filter(Boolean)
+        : landmarks;
+
+    const countdownOverlay =
+        document.getElementById("countdown-overlay");
+
+    const isCountdownActive =
+        countdownOverlay &&
+        countdownOverlay.style.display === "flex";
+
+    // 介紹、倒數或教學期間，暫停姿勢判定。
     if (isIntroActive || isCountdownActive || isTutorialVisible()) {
         frameHints = [];
 
-        if (results.poseLandmarks) {
-            drawConnectors(canvasCtx, results.poseLandmarks, POSE_CONNECTIONS, { color: "#7f8c8d", lineWidth: 2 });
-            drawLandmarks(canvasCtx, results.poseLandmarks, { color: "#bdc3c7", lineWidth: 1 });
+        if (landmarks) {
+            drawConnectors(
+                canvasCtx,
+                landmarks,
+                connections,
+                { color: "#7f8c8d", lineWidth: 2 }
+            );
+
+            drawLandmarks(
+                canvasCtx,
+                points,
+                { color: "#bdc3c7", lineWidth: 1 }
+            );
         }
 
         canvasCtx.restore();
         return;
     }
 
-    if (results.poseLandmarks) {
-        drawConnectors(canvasCtx, results.poseLandmarks, POSE_CONNECTIONS, { color: "#00FF00", lineWidth: 4 });
-        drawLandmarks(canvasCtx, results.poseLandmarks, { color: "#FF0000", lineWidth: 2 });
+    if (landmarks) {
+        drawConnectors(
+            canvasCtx,
+            landmarks,
+            connections,
+            { color: "#00FF00", lineWidth: 4 }
+        );
+
+        drawLandmarks(
+            canvasCtx,
+            points,
+            { color: "#FF0000", lineWidth: 2 }
+        );
 
         try {
-            const landmarks = results.poseLandmarks;
-            const mode = currentPoseMode.toLowerCase();
-
+            // 傳入原始節點陣列，保留節點編號。
             switch (mode) {
                 case "tree":
                     analyzeTree(landmarks);
                     break;
+
                 case "squat":
                     analyzeSquat(landmarks);
                     break;
+
                 case "raise":
                     analyzeRaise(landmarks);
                     break;
+
                 case "sidestretch":
                     analyzeSideStretch(landmarks);
                     break;
-                case "dancer":
-                    analyzeDancer(landmarks);
-                    break;
-                case "triangle":
-                    analyzeTriangle(landmarks);
-                    break;
+
                 case "sidelunge":
                     analyzeSideLunge(landmarks);
                     break;
+
                 case "crossarmstretch":
                     analyzeCrossArmStretch(landmarks);
                     break;
-                case "warrior2":
-                    analyzeWarrior2(landmarks);
+
+                case "dancer":
+                    analyzeDancer(landmarks);
                     break;
             }
         } catch (error) {
@@ -1930,22 +2017,23 @@ function onResults(results) {
         resetHold();
         setStatus("neutral");
 
-        const message = "尚未偵測到身體，請站到鏡頭中央並讓全身入鏡";
+        const message = mode === "crossarmstretch"
+            ? "尚未偵測到上半身，請讓雙肩、手肘與手腕完整入鏡"
+            : "尚未偵測到身體，請站到鏡頭中央並讓全身入鏡";
 
         const outputs = {
             tree: [armStatusDiv, legStatusDiv],
             squat: [squatStatusDiv],
             raise: [raiseStatusDiv],
             sidestretch: [sideStretchStatusDiv],
-            dancer: [dancerStatusDiv],
-            triangle: [triangleStatusDiv],
             sidelunge: [sideLungeStatusDiv],
             crossarmstretch: [crossArmStretchStatusDiv],
-            warrior2: [warrior2StatusDiv]
+            dancer: [dancerStatusDiv]
         };
 
-        const currentOutputs = outputs[currentPoseMode.toLowerCase()] || [];
-        currentOutputs.forEach(el => setText(el, message, ""));
+        (outputs[mode] || []).forEach(el => {
+            setText(el, message, "");
+        });
 
         queueHint(message);
     }
