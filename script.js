@@ -2,7 +2,7 @@
 // 🌟 1. 引入 Firebase SDK
 // ==========================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getAuth,signInWithPopup,GoogleAuthProvider,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, addDoc, collection, query, orderBy, limit, getDocs, increment, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // ==========================================
@@ -32,12 +32,12 @@ const workoutView = document.getElementById("workout-view");
 const actionsGrid = document.getElementById("actions-grid");
 const btnBackHome = document.getElementById("btn-back-home");
 
-// --- 🌟 新增：左側控制區元素 ---
+// --- 左側控制區元素 ---
 const quickSwitchSelect = document.getElementById("quick-switch-select");
 const btnTutorial = document.getElementById("btn-tutorial");
 const tutorialVideoContainer = document.getElementById("tutorial-video-container");
 const tutorialVideo = document.getElementById("tutorial-video");
-// --------------------------------
+
 const currentWorkoutTitle = document.getElementById("current-workout-title");
 
 const videoElement = document.getElementById("video");
@@ -51,11 +51,15 @@ const treeInfo = document.getElementById("tree-info");
 const squatInfo = document.getElementById("squat-info");
 const raiseInfo = document.getElementById("raise-info");
 const sideStretchInfo = document.getElementById("side-stretch-info");
+const dancerInfo = document.getElementById("dancer-info"); // 🌟 舞王式資訊區塊
+
 const armStatusDiv = document.getElementById("arm-status");
 const legStatusDiv = document.getElementById("leg-status");
 const squatStatusDiv = document.getElementById("squat-status");
 const raiseStatusDiv = document.getElementById("raise-status");
 const sideStretchStatusDiv = document.getElementById("side-stretch-status");
+const dancerStatusDiv = document.getElementById("dancer-status"); // 🌟 舞王式狀態顯示
+
 const saveStatusDiv = document.getElementById("save-status");
 
 const loginBtn = document.getElementById("login-btn");
@@ -104,7 +108,6 @@ const RAISE = {
     elbowMin: 140
 };
 
-
 // ==========================================
 // 🌟 4. 動作資料庫
 // ==========================================
@@ -149,16 +152,29 @@ const POSE_DATABASE = [
         ]
     },
     {
-    id: "sideStretch",
-    title: "側腰拉伸",
-    subtitle: "Standing Side Stretch",
-    img: "https://images.pexels.com/photos/8809597/pexels-photo-8809597.jpeg?auto=compress&cs=tinysrgb&w=600",
-    videoUrl: "",
-    desc: "站姿側腰拉伸：單手向上延伸，身體緩慢向另一側側彎。",
-    tips: [
-        "正面朝向鏡頭，讓雙手、髖部及雙腳完整入鏡",
-        "雙腳站穩、膝蓋自然伸直，單手向上延伸",
-        "向舉高手臂的另一側側彎，在舒適範圍內停留"
+        id: "sideStretch",
+        title: "側腰拉伸",
+        subtitle: "Standing Side Stretch",
+        img: "https://images.pexels.com/photos/8809597/pexels-photo-8809597.jpeg?auto=compress&cs=tinysrgb&w=600",
+        videoUrl: "",
+        desc: "站姿側腰拉伸：單手向上延伸，身體緩慢向另一側側彎。",
+        tips: [
+            "正面朝向鏡頭，讓雙手、髖部及雙腳完整入鏡",
+            "雙腳站穩、膝蓋自然伸直，單手向上延伸",
+            "向舉高手臂的另一側側彎，在舒適範圍內停留"
+        ]
+    },
+    {
+        id: "dancer",
+        title: "舞王式",
+        subtitle: "Dancer Pose",
+        img: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=600&q=80",
+        videoUrl: "",
+        desc: "舞王式能深度延展胸腔與肩膀、伸展大腿前側，並大幅增強單腳平衡感與核心力量。",
+        tips: [
+            "單腳站穩伸直，另一腳曲膝向後上方抬起",
+            "同側手向後握住腳背或腳踝，另一手向前平舉延展",
+            "上半身自然前傾微挺胸，維持骨盆穩定不翻轉"
         ]
     }
 ];
@@ -313,7 +329,7 @@ logoutBtn?.addEventListener("click", () => {
 });
 
 // ==========================================
-// 7. 首頁動態渲染 3 個動作卡片
+// 7. 首頁動態渲染動作卡片
 // ==========================================
 function renderActionGrid() {
     if (!actionsGrid) return;
@@ -352,14 +368,12 @@ function enterWorkout(poseId) {
 
     selectedPoseId = poseId;
 
-    const poseItem = POSE_DATABASE.find(p => p.id === poseId);
+    const poseItem = POSE_DATABASE.find(p => p.id.toLowerCase() === poseId.toLowerCase());
 
     if (currentWorkoutTitle && poseItem) {
         currentWorkoutTitle.innerText = `${poseItem.title} 練習室`;
     }
 
-    // 🌟   新增：進入練習室時，讓左側下拉選單切換到正確的動作
-    // 確保選單 value 與動作 id 的大小寫一致（新版直接使用 Raise）。
     if (quickSwitchSelect) quickSwitchSelect.value = poseId;
 
     showPoseUI(poseId);
@@ -375,7 +389,6 @@ btnBackHome?.addEventListener("click", () => {
 
 function leaveWorkoutCleanup() {
     stopCamera();
-    // 新增：返回首頁時，強制關閉並暫停教學影片
     closeTutorial();
     cancelCountdown();
 
@@ -391,8 +404,6 @@ function leaveWorkoutCleanup() {
 // ==========================================
 // 12. 初始化 MediaPipe
 // ==========================================
-// 新版將原第 12 節移至此處，於開啟鏡頭時才初始化模型。
-// 鏡頭與模型
 function initializePoseTracking() {
     if (pose && camera) return;
 
@@ -467,9 +478,8 @@ function showCameraError(err) {
 }
 
 // ==========================================
-// 8.教學影片
+// 8. 教學影片
 // ==========================================
-// 新增：觀看教學時暫停語音與計時
 function isTutorialVisible() {
     return !!tutorialVideoContainer &&
         !tutorialVideoContainer.classList.contains("hidden-container");
@@ -498,26 +508,20 @@ function closeTutorial() {
     }
 }
 
-// 1. 監聽下拉式選單的切換
 quickSwitchSelect?.addEventListener("change", e => {
-    // 新版直接使用選單值；HTML option value 須與資料庫 id 的大小寫一致。
     const poseId = e.target.value;
     selectedPoseId = poseId;
 
-    // 更新上方的標題
-    const poseItem = POSE_DATABASE.find(p => p.id === poseId);
+    const poseItem = POSE_DATABASE.find(p => p.id.toLowerCase() === poseId.toLowerCase());
     if (currentWorkoutTitle && poseItem) {
         currentWorkoutTitle.innerText = `${poseItem.title} 練習室`;
     }
 
-    // 如果教學影片正在播，切換動作時自動關閉
     closeTutorial();
     showPoseUI(poseId);
-    // 重新呼叫倒數 3 秒的引導畫面，並進行切換
     openPoseIntro(poseId);
 });
 
-// 2. 監聽「教學」按鈕的點擊
 btnTutorial?.addEventListener("click", () => {
     if (!tutorialVideoContainer || !tutorialVideo) return;
 
@@ -527,7 +531,7 @@ btnTutorial?.addEventListener("click", () => {
     }
 
     const poseItem = POSE_DATABASE.find(
-        p => p.id === selectedPoseId
+        p => p.id.toLowerCase() === selectedPoseId.toLowerCase()
     );
 
     if (!poseItem?.videoUrl) {
@@ -559,12 +563,11 @@ btnTutorial?.addEventListener("click", () => {
 // ==========================================
 // 9. 彈窗與 3 秒倒數計時
 // ==========================================
-// 動作介紹與倒數
 function openPoseIntro(poseKey) {
     stopSpeaking();
     cancelCountdown();
 
-    const guide = POSE_DATABASE.find(p => p.id === poseKey);
+    const guide = POSE_DATABASE.find(p => p.id.toLowerCase() === poseKey.toLowerCase());
 
     if (!guide || !introModal) {
         startCountdownForPose(poseKey);
@@ -617,7 +620,7 @@ function cancelCountdown() {
 function startCountdownForPose(poseKey) {
     const overlay = document.getElementById("countdown-overlay");
     const numberDiv = document.getElementById("countdown-number");
-    const guide = POSE_DATABASE.find(p => p.id === poseKey);
+    const guide = POSE_DATABASE.find(p => p.id.toLowerCase() === poseKey.toLowerCase());
 
     if (!overlay || !numberDiv) {
         switchPose(poseKey);
@@ -652,8 +655,8 @@ function startCountdownForPose(poseKey) {
 function switchPose(poseName) {
     currentPoseMode = poseName;
     selectedPoseId = currentPoseMode;
+    
     canSave = true;
-
     resetHold();
 
     if (saveStatusDiv) saveStatusDiv.innerText = "";
@@ -662,47 +665,37 @@ function switchPose(poseName) {
 
 function showPoseUI(poseId) {
     setStatus("neutral");
+    const norm = poseId.toLowerCase();
 
-    if (treeInfo) {
-        treeInfo.style.display = poseId === "tree" ? "block" : "none";
-    }
+    if (treeInfo) treeInfo.style.display = norm === "tree" ? "block" : "none";
+    if (squatInfo) squatInfo.style.display = norm === "squat" ? "block" : "none";
+    if (raiseInfo) raiseInfo.style.display = norm === "raise" ? "block" : "none";
+    if (sideStretchInfo) sideStretchInfo.style.display = norm === "sidestretch" ? "block" : "none";
+    if (dancerInfo) dancerInfo.style.display = norm === "dancer" ? "block" : "none";
 
-    if (squatInfo) {
-        squatInfo.style.display = poseId === "squat" ? "block" : "none";
-    }
-
-     if (raiseInfo) {
-        raiseInfo.style.display = poseId === "Raise" ? "block" : "none";
-    }
-
-    if (sideStretchInfo) {
-        sideStretchInfo.style.display =
-            poseId === "sideStretch" ? "block" : "none";
-    }
-
-    const poseItem = POSE_DATABASE.find(p => p.id === poseId);
+    const poseItem = POSE_DATABASE.find(p => p.id.toLowerCase() === norm);
 
     if (poseTitle) {
-        poseTitle.innerText =
-            `${poseItem ? poseItem.title : poseId} 偵測`;
+        poseTitle.innerText = `${poseItem ? poseItem.title : poseId} 偵測`;
     }
 
-    if (poseId === "tree") {
+    if (norm === "tree") {
         setText(armStatusDiv, "手部請舉過頭頂，或於胸前合十", "");
         setText(legStatusDiv, "請單腳站穩，另一腳曲膝抬高貼於腿側", "");
-    } else if (poseId === "squat") {
+    } else if (norm === "squat") {
         setText(squatStatusDiv, "請開始深蹲", "");
-    } else if (poseId === "Raise") {
+    } else if (norm === "raise") {
         setText(raiseStatusDiv, "請將雙臂向兩側抬起至肩膀高度", "");
-    }else if (poseId === "sideStretch") {
-    setText(raiseStatusDiv, "請正面站立，單手上舉，向另一側緩慢側彎", "");
+    } else if (norm === "sidestretch") {
+        setText(sideStretchStatusDiv, "請正面站立，單手上舉，向另一側緩慢側彎", "");
+    } else if (norm === "dancer") {
+        setText(dancerStatusDiv, "請站穩支撐腳，另一腳曲膝向後上方抬起並伸展前臂", "");
     }
 }
 
 // ==========================================
 // 10. 幾何運算與語音提示
 // ==========================================
-// 幾何運算
 function calculateAngle(a, b, c) {
     const W = canvasElement?.width || 800;
     const H = canvasElement?.height || 450;
@@ -724,9 +717,7 @@ function calculateAngle(a, b, c) {
     return angle;
 }
 
-// 語音：完整唸完一句，才播放下一句。
 function stopSpeaking() {
-    // 🌟 關鍵修正：離開練習室或切換引導畫面時，清除語音與佇列，避免殘留播放狀態。
     activeUtterance = null;
     speechQueue = [];
     frameHints = [];
@@ -739,7 +730,7 @@ function stopSpeaking() {
 }
 
 function speakNow(text) {
-    if (isTutorialVisible()) return;  //新增
+    if (isTutorialVisible()) return;
     if (!("speechSynthesis" in window) || activeUtterance) return;
 
     const utterance = new SpeechSynthesisUtterance(text);
@@ -769,14 +760,13 @@ function speakNow(text) {
 }
 
 function speakHint(text, { priority = false } = {}) {
-    if (isTutorialVisible()) return;  // 新增
+    if (isTutorialVisible()) return;
     if (!("speechSynthesis" in window)) return;
 
     if (activeUtterance?.text === text || speechQueue.includes(text)) {
         return;
     }
 
-    // 檢查冷卻時間，避免同時間狂念
     if (!priority) {
         const now = Date.now();
 
@@ -823,7 +813,6 @@ function flushHints() {
     if (candidates.length > 0) speakNow(candidates[0]);
 }
 
-// 狀態與保持時間
 function setStatus(state) {
     statusDisplay?.classList.toggle("error", state === "error");
     statusDisplay?.classList.toggle("perfect", state === "perfect");
@@ -849,7 +838,7 @@ function updateHold(isPerfect, poseNameChinese) {
 
     if (perfectStartTime === 0) {
         perfectStartTime = Date.now();
-        speakHint("很好，請保持"); // 🌟 補上這行語音
+        speakHint("很好，請保持");
     }
 
     const held = Date.now() - perfectStartTime;
@@ -863,8 +852,9 @@ function updateHold(isPerfect, poseNameChinese) {
 }
 
 // ==========================================
-// 11. AI 偵測主邏輯
+// 11. AI 動作分析演算
 // ==========================================
+
 // === 大樹式 ===
 function analyzeTree(lm) {
     const shoulderL = lm[11];
@@ -912,7 +902,7 @@ function analyzeTree(lm) {
             );
 
             isLegError = true;
-            queueHint("支撐腳請伸直"); // 🌟 補上這行語音
+            queueHint("支撐腳請伸直");
         } else {
             setText(
                 legStatusDiv,
@@ -928,7 +918,7 @@ function analyzeTree(lm) {
         );
 
         isLegError = true;
-        queueHint("請單腳站立，另一腳曲膝抬高貼於腿側"); // 🌟 補上這行語音
+        queueHint("請單腳站立，另一腳曲膝抬高貼於腿側");
     }
 
     const leftElbowAngle =
@@ -956,7 +946,7 @@ function analyzeTree(lm) {
             );
 
             isArmError = true;
-            queueHint("雙手高舉時手肘請打直"); // 🌟 補上這行語音
+            queueHint("雙手高舉時手肘請打直");
         } else {
             setText(
                 armStatusDiv,
@@ -978,7 +968,7 @@ function analyzeTree(lm) {
         );
 
         isArmError = true;
-        queueHint("手部請舉過頭頂，或於胸前合十"); // 🌟 補上這行語音
+        queueHint("手部請舉過頭頂，或於胸前合十");
     }
 
     const isPerfect = !isArmError && !isLegError;
@@ -996,7 +986,6 @@ function analyzeTree(lm) {
 }
 
 // === 深蹲 ===
-// 🌟 避免單側被鏡頭遮擋：新版依關節可見度，選擇較清楚的一側。
 function pickBodySide(lm) {
     const visibility = indexes => indexes.reduce(
         (sum, index) => sum + (lm[index]?.visibility ?? 0),
@@ -1025,17 +1014,14 @@ function analyzeSquat(lm) {
     let state = "neutral";
     let isPerfect = false;
 
-    // 讓深蹲在尚未下蹲時，也有字幕及語音
     if (kneeAngle >= 140) {
         message = "臀部向後坐，慢慢開始深蹲";
         queueHint(message);
     }
 
-    // 🌟 偵測門檻：膝蓋角度小於 140 度時開始回饋（維持新版設定）。
     if (kneeAngle < 140) {
         if (kneeAngle > 110) {
             message = "再蹲低一點！";
-            // 🌟 使用警告文字色；未設定時採用 #c27803 暖色。
             color = "var(--warn-text, #c27803)";
             queueHint("再蹲低一點");
         } else if (hipAngle > 120) {
@@ -1065,7 +1051,7 @@ function analyzeSquat(lm) {
     }
 }
 
-// ==================== [3] 平舉 ====================
+// === 平舉 ===
 function analyzeRaise(lm) {
     const shoulderL = lm[11];
     const elbowL = lm[13];
@@ -1078,23 +1064,14 @@ function analyzeRaise(lm) {
     const hipL = lm[23];
     const hipR = lm[24];
 
-    // 1. 手肘伸直角度 (左 11-13-15, 右 12-14-16)
-    const leftElbowAngle =
-        calculateAngle(shoulderL, elbowL, wristL);
+    const leftElbowAngle = calculateAngle(shoulderL, elbowL, wristL);
+    const rightElbowAngle = calculateAngle(shoulderR, elbowR, wristR);
 
-    const rightElbowAngle =
-        calculateAngle(shoulderR, elbowR, wristR);
-
-    // 2. 手臂與軀幹抬起夾角 (左 23-11-13, 右 24-12-14)
-    const leftArmRaise =
-        calculateAngle(hipL, shoulderL, elbowL);
-
-    const rightArmRaise =
-        calculateAngle(hipR, shoulderR, elbowR);
+    const leftArmRaise = calculateAngle(hipL, shoulderL, elbowL);
+    const rightArmRaise = calculateAngle(hipR, shoulderR, elbowR);
 
     const messages = [];
 
-    // 檢測雙臂是否抬至肩膀高度（新版以 RAISE 設定判斷：65° ~ 115°）。
     if (
         leftArmRaise < RAISE.bothTooLow &&
         rightArmRaise < RAISE.bothTooLow
@@ -1115,7 +1092,6 @@ function analyzeRaise(lm) {
         }
     }
 
-    // 檢測手肘是否打直
     if (messages.length === 0) {
         if (leftElbowAngle < RAISE.elbowMin) {
             messages.push("左手手肘請盡量打直");
@@ -1126,7 +1102,6 @@ function analyzeRaise(lm) {
         }
     }
 
-    // 狀態判斷與語音回饋
     const isPerfect = messages.length === 0;
 
     if (!isPerfect) {
@@ -1139,8 +1114,6 @@ function analyzeRaise(lm) {
                 `)
                 .join("<br>");
         }
-
-        // 新版將錯誤訊息交由語音佇列，依冷卻時間與最近播放時間選擇提示。
         messages.forEach(queueHint);
     }
 
@@ -1148,7 +1121,6 @@ function analyzeRaise(lm) {
 
     const secondsLeft = updateHold(isPerfect, "平舉");
 
-    // 雙臂達到標準
     if (isPerfect && raiseStatusDiv) {
         raiseStatusDiv.innerHTML = secondsLeft > 0
             ? `<span style="color: var(--success-text, #17a35a); font-weight: bold;">PERFECT! 手臂維持平舉 ${secondsLeft} 秒...</span>`
@@ -1156,15 +1128,14 @@ function analyzeRaise(lm) {
     }
 }
 
-// === 〔4〕側腰拉伸：站姿、單手上舉 ===
+// === 側腰拉伸 ===
 function analyzeSideStretch(lm) {
     const visible = indexes => indexes.every(i => {
         const p = lm[i];
         return p && Number.isFinite(p.x) && Number.isFinite(p.y)
             && (p.visibility ?? 0) >= 0.5;
     });
-    
-// 明確指出哪些部位看不清楚
+
     const requiredPoints = [
         [11, "左肩"], [12, "右肩"],
         [23, "左髖"], [24, "右髖"],
@@ -1179,17 +1150,14 @@ function analyzeSideStretch(lm) {
     if (missingParts.length > 0) {
         setText(
             sideStretchStatusDiv,
-            `請往後腿，讓${missingParts.join("、")}完整入鏡`,
+            `請往後退，讓${missingParts.join("、")}完整入鏡`,
             COLOR_ERR
         );
 
         setStatus("neutral");
         updateHold(false, "側腰拉伸");
 
-        queueHint(
-            "請往後退，讓肩膀、髖部、膝蓋與雙腳完整入鏡"
-        );
-
+        queueHint("請往後退，讓肩膀、髖部、膝蓋與雙腳完整入鏡");
         return;
     }
 
@@ -1202,11 +1170,9 @@ function analyzeSideStretch(lm) {
     const hips = midpoint(lm[23], lm[24]);
     const ankles = midpoint(lm[27], lm[28]);
 
-    // 比較上半身與下半身的方向，估算側彎角度。
     const bendAngle = 180 - calculateAngle(shoulders, hips, ankles);
     const bendX = shoulders.x - hips.x;
 
-    // 檢查側彎相反側的手臂是否上舉、伸直。
     const raisedOuterArm = (s, e, w, h) => {
         if (!visible([s, e, w, h])) return false;
 
@@ -1257,9 +1223,84 @@ function analyzeSideStretch(lm) {
     }
 }
 
+// === 🌟 舞王式 (Dancer Pose) ===
+function analyzeDancer(lm) {
+    const shoulderL = lm[11];
+    const elbowL = lm[13];
+    const wristL = lm[15];
+
+    const shoulderR = lm[12];
+    const elbowR = lm[14];
+    const wristR = lm[16];
+
+    const hipL = lm[23];
+    const kneeL = lm[25];
+    const ankleL = lm[27];
+
+    const hipR = lm[24];
+    const kneeR = lm[26];
+    const ankleR = lm[28];
+
+    const leftKneeAngle = calculateAngle(hipL, kneeL, ankleL);
+    const rightKneeAngle = calculateAngle(hipR, kneeR, ankleR);
+
+    // 辨識向後上方曲膝抬起之腳（膝角彎曲 < 135°，腳踝高度接近膝蓋或更高）
+    const isRightLegLifted = (rightKneeAngle < 135) && (ankleR.y < kneeR.y + 0.12);
+    const isLeftLegLifted = (leftKneeAngle < 135) && (ankleL.y < kneeL.y + 0.12);
+
+    const messages = [];
+
+    if (isRightLegLifted) {
+        // 右腳後抬 -> 左腳為支撐腳
+        if (leftKneeAngle < 150) {
+            messages.push("支撐腳（左腳）請打直站穩");
+        }
+        // 前手檢測：左臂向前延展
+        const leftArmStraight = calculateAngle(shoulderL, elbowL, wristL);
+        const leftArmRaise = calculateAngle(hipL, shoulderL, elbowL);
+        if (leftArmStraight < 135 || leftArmRaise < 45) {
+            messages.push("前手請向前上方延伸打直");
+        }
+    } else if (isLeftLegLifted) {
+        // 左腳後抬 -> 右腳為支撐腳
+        if (rightKneeAngle < 150) {
+            messages.push("支撐腳（右腳）請打直站穩");
+        }
+        // 前手檢測：右臂向前延展
+        const rightArmStraight = calculateAngle(shoulderR, elbowR, wristR);
+        const rightArmRaise = calculateAngle(hipR, shoulderR, elbowR);
+        if (rightArmStraight < 135 || rightArmRaise < 45) {
+            messages.push("前手請向前上方延伸打直");
+        }
+    } else {
+        messages.push("請單腳站穩，另一腳曲膝向後上方抬起");
+    }
+
+    const isPerfect = messages.length === 0;
+
+    if (!isPerfect) {
+        if (dancerStatusDiv) {
+            dancerStatusDiv.innerHTML = messages
+                .map(msg => `<span style="color: var(--error-text, #e8435a);">${msg}</span>`)
+                .join("<br>");
+        }
+        messages.forEach(queueHint);
+    }
+
+    setStatus(isPerfect ? "perfect" : "error");
+
+    const secondsLeft = updateHold(isPerfect, "舞王式");
+
+    if (isPerfect && dancerStatusDiv) {
+        dancerStatusDiv.innerHTML = secondsLeft > 0
+            ? `<span style="color: var(--success-text, #17a35a); font-weight: bold;">PERFECT! 維持優美舞王式 ${secondsLeft} 秒...</span>`
+            : `<span style="color: var(--success-text, #17a35a); font-weight: bold;">PERFECT! 舞王式完成！</span>`;
+    }
+}
+
 // AI 偵測主迴圈
 function onResults(results) {
-    if (!workoutView || workoutView.style.display === "none") return;  // 避免返回首頁後繼續觸發提示
+    if (!workoutView || workoutView.style.display === "none") return;
     if (loadingDiv && loadingDiv.style.display !== "none") {
         loadingDiv.style.display = "none";
     }
@@ -1267,44 +1308,18 @@ function onResults(results) {
     if (!canvasCtx || !canvasElement) return;
 
     canvasCtx.save();
-    canvasCtx.clearRect(
-        0,
-        0,
-        canvasElement.width,
-        canvasElement.height
-    );
+    canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+    canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
-    canvasCtx.drawImage(
-        results.image,
-        0,
-        0,
-        canvasElement.width,
-        canvasElement.height
-    );
-
-    const countdownOverlay =
-        document.getElementById("countdown-overlay");
-
-    const isCountdownActive =
-        countdownOverlay &&
-        countdownOverlay.style.display === "flex";
+    const countdownOverlay = document.getElementById("countdown-overlay");
+    const isCountdownActive = countdownOverlay && countdownOverlay.style.display === "flex";
 
     if (isIntroActive || isCountdownActive || isTutorialVisible()) {
         frameHints = [];
 
         if (results.poseLandmarks) {
-            drawConnectors(
-                canvasCtx,
-                results.poseLandmarks,
-                POSE_CONNECTIONS,
-                { color: "#7f8c8d", lineWidth: 2 }
-            );
-
-            drawLandmarks(
-                canvasCtx,
-                results.poseLandmarks,
-                { color: "#bdc3c7", lineWidth: 1 }
-            );
+            drawConnectors(canvasCtx, results.poseLandmarks, POSE_CONNECTIONS, { color: "#7f8c8d", lineWidth: 2 });
+            drawLandmarks(canvasCtx, results.poseLandmarks, { color: "#bdc3c7", lineWidth: 1 });
         }
 
         canvasCtx.restore();
@@ -1312,60 +1327,52 @@ function onResults(results) {
     }
 
     if (results.poseLandmarks) {
-        drawConnectors(
-            canvasCtx,
-            results.poseLandmarks,
-            POSE_CONNECTIONS,
-            { color: "#00FF00", lineWidth: 4 }
-        );
-
-        drawLandmarks(
-            canvasCtx,
-            results.poseLandmarks,
-            { color: "#FF0000", lineWidth: 2 }
-        );
+        drawConnectors(canvasCtx, results.poseLandmarks, POSE_CONNECTIONS, { color: "#00FF00", lineWidth: 4 });
+        drawLandmarks(canvasCtx, results.poseLandmarks, { color: "#FF0000", lineWidth: 2 });
 
         try {
             const landmarks = results.poseLandmarks;
+            const mode = currentPoseMode.toLowerCase();
 
-            switch (currentPoseMode) {
+            switch (mode) {
                 case "tree":
                     analyzeTree(landmarks);
                     break;
                 case "squat":
                     analyzeSquat(landmarks);
                     break;
-                case "Raise":
+                case "raise":
                     analyzeRaise(landmarks);
                     break;
-                case "sideStretch":
+                case "sidestretch":
                     analyzeSideStretch(landmarks);
+                    break;
+                case "dancer":
+                    analyzeDancer(landmarks);
                     break;
             }
         } catch (error) {
             console.warn("Pose processing error:", error);
         }
     } else {
-    resetHold();
-    setStatus("neutral");
+        resetHold();
+        setStatus("neutral");
 
-    // 「完全沒偵測到身體」時的提示
-    const message =
-        "尚未偵測到身體，請站到鏡頭中央並讓全身入鏡";
+        const message = "尚未偵測到身體，請站到鏡頭中央並讓全身入鏡";
 
-    const outputs = {
-        tree: [armStatusDiv, legStatusDiv],
-        squat: [squatStatusDiv],
-        Raise: [raiseStatusDiv],
-        sideStretch: [sideStretchStatusDiv]
-    };
+        const outputs = {
+            tree: [armStatusDiv, legStatusDiv],
+            squat: [squatStatusDiv],
+            raise: [raiseStatusDiv],
+            sidestretch: [sideStretchStatusDiv],
+            dancer: [dancerStatusDiv]
+        };
 
-    (outputs[currentPoseMode] || []).forEach(el => {
-        setText(el, message, "");
-    });
+        const currentOutputs = outputs[currentPoseMode.toLowerCase()] || [];
+        currentOutputs.forEach(el => setText(el, message, ""));
 
-    queueHint(message);
-}
+        queueHint(message);
+    }
 
     flushHints();
     canvasCtx.restore();
@@ -1376,22 +1383,16 @@ function handlePoseSuccess(poseNameChinese) {
     hasSavedThisRep = true;
 
     if (saveStatusDiv) {
-        saveStatusDiv.innerText =
-            `🌟 完美${poseNameChinese}！已記錄！`;
-
+        saveStatusDiv.innerText = `🌟 完美${poseNameChinese}！已記錄！`;
         saveStatusDiv.style.color = COLOR_OK;
     }
 
-    speakHint(
-        `太棒了！${poseNameChinese}完成！`,
-        { priority: true }
-    );
+    speakHint(`太棒了！${poseNameChinese}完成！`, { priority: true });
 }
 
 // ==========================================
 // 13. 資料庫儲存與查詢核心
 // ==========================================
-// 練習紀錄與積分
 async function saveDailyRecord(poseType, status) {
     if (!currentUser || !canSave) return;
 
@@ -1447,8 +1448,6 @@ async function uploadScore(points) {
     }
 }
 
-// 個人中心與面板
-// 關閉所有抽屜面板
 function closeAllPanels() {
     if (profileContainer) profileContainer.style.display = "none";
     if (favoritesContainer) favoritesContainer.style.display = "none";
@@ -1492,7 +1491,6 @@ async function loadProfileData() {
     if (!currentUser) return;
 
     const profileUser = currentUser;
-
     void loadCheckInCalendar();
 
     const nameEl = document.getElementById("profile-name");
@@ -1515,7 +1513,6 @@ async function loadProfileData() {
         avatarEl.src = profileUser.photoURL || AVATAR_FALLBACK;
     }
 
-    // 1. 讀取總積分與段位
     try {
         const userLeaderboardRef = doc(
             db,
@@ -1558,12 +1555,10 @@ async function loadProfileData() {
         }
     } catch (error) {
         if (currentUser?.uid !== profileUser.uid) return;
-
         console.error("讀取個人積分失敗", error);
         if (rankEl) rankEl.innerText = "🌱 瑜珈新手";
     }
 
-    // 2. 讀取練習天數、Perfect次數（新版動作偏好統計改由「我的最愛」長條圖顯示）
     try {
         const historyRef = collection(
             db,
@@ -1888,7 +1883,6 @@ document.getElementById("checkin-refresh-btn")
 // ==========================================
 // 15. 我的最愛與排行榜資料讀取
 // ==========================================
-// 我的最愛
 async function loadFavoritesData() {
     const summary = document.getElementById("favorites-summary");
     const listContainer = document.getElementById("favorites-list");
@@ -1898,7 +1892,6 @@ async function loadFavoritesData() {
         if (summary) {
             summary.textContent = "請先登入，查看你的動作累計次數。";
         }
-
         return;
     }
 
@@ -1929,9 +1922,7 @@ async function loadFavoritesData() {
     }
 
     try {
-        const querySnapshot = await withUiTimeout(
-            getDocs(historyRef)
-        );
+        const querySnapshot = await withUiTimeout(getDocs(historyRef));
 
         if (!isCurrentRequest()) return;
 
@@ -1970,11 +1961,7 @@ async function loadFavoritesData() {
         try {
             renderFavoritesChart(poseCounts);
         } catch (error) {
-            console.warn(
-                "圖表暫時無法顯示，仍可查看動作次數",
-                error
-            );
-
+            console.warn("圖表暫時無法顯示，仍可查看動作次數", error);
             if (chartCard) chartCard.hidden = true;
         }
     } catch (error) {
@@ -1983,8 +1970,7 @@ async function loadFavoritesData() {
         if (!isCurrentRequest()) return;
 
         if (summary) {
-            summary.textContent =
-                "暫時無法載入我的最愛，請按「重新整理」重試。";
+            summary.textContent = "暫時無法載入我的最愛，請按「重新整理」重試。";
         }
     }
 }
@@ -2004,12 +1990,12 @@ function renderFavoritesChart(poseCounts) {
 
     if (favoritesChart) favoritesChart.destroy();
 
-    // 淺紫、淺天藍、薄荷青
     const colors = {
         "大樹式": "#a29bfe",
         "深蹲": "#74b9ff",
         "平舉": "#81ecec",
-        "側腰拉伸": "#fab1a0"
+        "側腰拉伸": "#fab1a0",
+        "舞王式": "#fd79a8" // 🌟 舞王式專屬粉紅配重
     };
 
     favoritesChart = new Chart(ctx, {
@@ -2020,7 +2006,7 @@ function renderFavoritesChart(poseCounts) {
                 label: "Perfect 次數",
                 data: poseCounts.map(item => item.count),
                 backgroundColor: poseCounts.map(
-                    item => colors[item.title]
+                    item => colors[item.title] || "#a29bfe"
                 ),
                 borderRadius: 6
             }]
@@ -2029,13 +2015,10 @@ function renderFavoritesChart(poseCounts) {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: {
-                    display: false
-                },
+                legend: { display: false },
                 tooltip: {
                     callbacks: {
-                        label: context =>
-                            `${context.parsed.y} 次 Perfect`
+                        label: context => `${context.parsed.y} 次 Perfect`
                     }
                 }
             },
@@ -2043,9 +2026,7 @@ function renderFavoritesChart(poseCounts) {
                 y: {
                     beginAtZero: true,
                     suggestedMax: 1,
-                    ticks: {
-                        precision: 0
-                    },
+                    ticks: { precision: 0 },
                     title: {
                         display: true,
                         text: "Perfect 次數"
@@ -2116,54 +2097,35 @@ async function loadLeaderboardData() {
     }
 }
 
-// 面板按鈕
-// 抽屜按鈕切換事件綁定
+// 面板按鈕事件綁定
 btnProfile?.addEventListener("click", () => {
-    toggleDashboardPanel(
-        profileContainer,
-        btnProfile,
-        loadProfileData // 🌟 點開時立刻向 Firebase 撈取數據
-    );
+    toggleDashboardPanel(profileContainer, btnProfile, loadProfileData);
 });
 
 toggleFavoritesBtn?.addEventListener("click", () => {
-    toggleDashboardPanel(
-        favoritesContainer,
-        toggleFavoritesBtn,
-        loadFavoritesData // 🌟 點開時加載「我的最愛」的歷史累計紀錄
-    );
+    toggleDashboardPanel(favoritesContainer, toggleFavoritesBtn, loadFavoritesData);
 });
 
 toggleLeaderboardBtn?.addEventListener("click", () => {
-    toggleDashboardPanel(
-        leaderboardContainer,
-        toggleLeaderboardBtn,
-        loadLeaderboardData // 🌟 點開時加載排行榜
-    );
+    toggleDashboardPanel(leaderboardContainer, toggleLeaderboardBtn, loadLeaderboardData);
 });
 
-document.getElementById("favorites-close-btn")
-    ?.addEventListener("click", closeAllPanels);
+document.getElementById("favorites-close-btn")?.addEventListener("click", closeAllPanels);
+document.getElementById("favorites-refresh-btn")?.addEventListener("click", () => {
+    void loadFavoritesData();
+});
 
-document.getElementById("favorites-refresh-btn")
-    ?.addEventListener("click", () => {
-        void loadFavoritesData();
-    });
 // ==========================================
 // 🌟 16. 郵件提醒功能模組 (EmailJS)
 // ==========================================
-
-// ⚠️ 請填入你從 EmailJS 複製的三個代碼：
 const EMAILJS_PUBLIC_KEY = "xfPxgJEpZ-Ur7Tq7e";
 const EMAILJS_SERVICE_ID = "service_k67ijnj";
 const EMAILJS_TEMPLATE_ID = "template_he8ob63";
 
-// 初始化套件
 if (typeof emailjs !== 'undefined') {
     emailjs.init(EMAILJS_PUBLIC_KEY);
 }
 
-// 取得彈窗與按鈕元素
 const btnEmailRemind = document.getElementById('btn-email-remind');
 const emailModal = document.getElementById('email-modal');
 const btnCloseEmailModal = document.getElementById('btn-close-email-modal');
@@ -2172,7 +2134,6 @@ const remindTimeInput = document.getElementById('remind-time-input');
 const btnSendTestEmail = document.getElementById('btn-send-test-email');
 const btnSaveRemind = document.getElementById('btn-save-remind');
 
-// 1. 點擊導覽列「✉️ 提醒信」按鈕打開彈窗
 btnEmailRemind?.addEventListener('click', async () => {
     if (!currentUser) {
         alert("請先登入帳號！");
@@ -2181,7 +2142,6 @@ btnEmailRemind?.addEventListener('click', async () => {
 
     if (remindEmailInput) remindEmailInput.value = currentUser.email || "";
 
-    // 嘗試從 Firebase 讀取之前設定過的時間
     try {
         const userPrefRef = doc(db, "users", currentUser.uid);
         const docSnap = await getDoc(userPrefRef);
@@ -2195,12 +2155,10 @@ btnEmailRemind?.addEventListener('click', async () => {
     if (emailModal) emailModal.style.display = 'flex';
 });
 
-// 2. 點擊「關閉」隱藏彈窗
 btnCloseEmailModal?.addEventListener('click', () => {
     if (emailModal) emailModal.style.display = 'none';
 });
 
-// 3. 發送信件核心函式
 async function sendWorkoutReminder(targetEmail, userName) {
     try {
         const templateParams = {
@@ -2217,7 +2175,6 @@ async function sendWorkoutReminder(targetEmail, userName) {
     }
 }
 
-// 4. 點擊「立即寄送測試信」按鈕
 btnSendTestEmail?.addEventListener('click', async () => {
     if (!currentUser || !currentUser.email) {
         alert("無法讀取信箱，請確認是否已登入！");
@@ -2239,7 +2196,6 @@ btnSendTestEmail?.addEventListener('click', async () => {
     }
 });
 
-// 5. 點擊「儲存設定」按鈕（記錄到 Firebase）
 btnSaveRemind?.addEventListener('click', async () => {
     if (!currentUser) return;
 
@@ -2260,7 +2216,6 @@ btnSaveRemind?.addEventListener('click', async () => {
     }
 });
 
-// 6. 前端定時檢查（若網頁開著，時間到自動寄信）
 setInterval(() => {
     if (!currentUser || !remindTimeInput) return;
 
