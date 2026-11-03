@@ -61,6 +61,8 @@ const raiseStatusDiv = document.getElementById("raise-status");
 const sideStretchStatusDiv = document.getElementById("side-stretch-status");
 const dancerStatusDiv = document.getElementById("dancer-status");
 const triangleStatusDiv = document.getElementById("triangle-status");
+const sideLungeInfo = document.getElementById("side-lunge-info");
+const sideLungeStatusDiv = document.getElementById("side-lunge-status");
 
 const saveStatusDiv = document.getElementById("save-status");
 
@@ -192,6 +194,20 @@ const POSE_DATABASE = [
             "另一手筆直向上延伸，雙臂展開呈一直線"
         ]
     }
+    {
+    id: "sideLunge",
+    title: "側弓箭步",
+    subtitle: "Side Lunge",
+    img: "./side-lunge.png",
+    videoUrl: "",
+    desc: "雙腳向左右分開，一側屈膝，另一側腿伸直，重心移向屈膝側。",
+    tips: [
+        "正面朝向鏡頭，讓肩膀、髖部、膝蓋與雙腳完整入鏡",
+        "雙腳向左右分開，一側屈膝，另一側腿自然伸直",
+        "雙手可於胸前合十，上半身保持穩定",
+        "在舒適範圍內維持姿勢，左右兩側皆可練習"
+    ]
+},
 ];
 
 // 共用工具
@@ -275,6 +291,7 @@ let speechQueue = [];
 
 let pose = null;
 let camera = null;
+let sideLungeHoldSide = null;
 
 // 未完成登入或查詢前，也先顯示完整月曆。
 renderCheckInCalendar();
@@ -688,7 +705,8 @@ function showPoseUI(poseId) {
     if (sideStretchInfo) sideStretchInfo.style.display = norm === "sidestretch" ? "block" : "none";
     if (dancerInfo) dancerInfo.style.display = norm === "dancer" ? "block" : "none";
     if (triangleInfo) triangleInfo.style.display = norm === "triangle" ? "block" : "none";
-
+    if (sideLungeInfo) {sideLungeInfo.style.display = norm === "sidelunge" ? "block" : "none";}
+    
     const poseItem = POSE_DATABASE.find(p => p.id.toLowerCase() === norm);
 
     if (poseTitle) {
@@ -708,7 +726,8 @@ function showPoseUI(poseId) {
         setText(dancerStatusDiv, "請站穩支撐腳，另一腳曲膝向後上方抬起並伸展前臂", "");
     }else if (norm === "triangle") {
         setText(triangleStatusDiv, "請雙腳張開打直，單手向下輕觸腳踝，另一手筆直上舉", "");
-    }
+    }else if (norm === "sidelunge") {
+    setText(sideLungeStatusDiv,"請正面站立，雙腳向左右分開，一側屈膝、另一側腿伸直","");
 }
 
 // ==========================================
@@ -846,6 +865,7 @@ function setText(el, text, color) {
 function resetHold() {
     perfectStartTime = 0;
     hasSavedThisRep = false;
+    sideLungeHoldSide = null;
 }
 
 function updateHold(isPerfect, poseNameChinese) {
@@ -1211,9 +1231,9 @@ function analyzeSideStretch(lm) {
         messages.push("請站穩，雙膝自然伸直");
     }
 
-    if (bendAngle < 15) {
+    if (bendAngle < 25) {
         messages.push("請在舒適範圍內緩慢向側邊伸展");
-    } else if (bendAngle > 40) {
+    } else if (bendAngle > 55) {
         messages.push("請稍微回正一些");
     }
 
@@ -1380,6 +1400,169 @@ function analyzeTriangle(lm) {
             ? `<span style="color: var(--success-text, #17a35a); font-weight: bold;">PERFECT! 保持三角式伸展 ${secondsLeft} 秒...</span>`
             : `<span style="color: var(--success-text, #17a35a); font-weight: bold;">PERFECT! 三角式完成！</span>`;
     }
+    
+// === 側弓箭步：正面站姿，左右皆可 ===
+function analyzeSideLunge(lm) {
+    const requiredPoints = [
+        [11, "左肩"], [12, "右肩"],
+        [23, "左髖"], [24, "右髖"],
+        [25, "左膝"], [26, "右膝"],
+        [27, "左腳踝"], [28, "右腳踝"]
+    ];
+
+    const missingParts = requiredPoints
+        .filter(([i]) => {
+            const p = lm[i];
+
+            return !p
+                || !Number.isFinite(p.x)
+                || !Number.isFinite(p.y)
+                || p.x < 0 || p.x > 1
+                || p.y < 0 || p.y > 1
+                || (p.visibility ?? 0) < 0.5;
+        })
+        .map(([, name]) => name);
+
+    if (missingParts.length > 0) {
+        setText(
+            sideLungeStatusDiv,
+            `請往後退，讓${missingParts.join("、")}完整入鏡`,
+            COLOR_ERR
+        );
+
+        setStatus("neutral");
+        updateHold(false, "側弓箭步");
+
+        queueHint("請讓肩膀、髖部、膝蓋與雙腳完整入鏡");
+        return;
+    }
+
+    const W = canvasElement?.width || 800;
+    const H = canvasElement?.height || 450;
+
+    const midpoint = (a, b) => ({
+        x: (a.x + b.x) / 2,
+        y: (a.y + b.y) / 2
+    });
+
+    const distance = (a, b) =>
+        Math.hypot(
+            (a.x - b.x) * W,
+            (a.y - b.y) * H
+        );
+
+    const shoulders = midpoint(lm[11], lm[12]);
+    const hips = midpoint(lm[23], lm[24]);
+    const ankles = midpoint(lm[27], lm[28]);
+
+    const leftKneeAngle =
+        calculateAngle(lm[23], lm[25], lm[27]);
+
+    const rightKneeAngle =
+        calculateAngle(lm[24], lm[26], lm[28]);
+
+    // 膝蓋角度較小的一側，視為屈膝側。
+    const leftBent = leftKneeAngle <= rightKneeAngle;
+    const bentSide = leftBent ? "左" : "右";
+
+    const bentAngle =
+        leftBent ? leftKneeAngle : rightKneeAngle;
+
+    const straightAngle =
+        leftBent ? rightKneeAngle : leftKneeAngle;
+
+    const bentAnkle = leftBent ? lm[27] : lm[28];
+
+    // 以平均腿長校正站距，減少離鏡頭遠近的影響。
+    const legLength = (
+        distance(lm[23], lm[25]) +
+        distance(lm[25], lm[27]) +
+        distance(lm[24], lm[26]) +
+        distance(lm[26], lm[28])
+    ) / 2;
+
+    const stanceWidth =
+        Math.abs(lm[27].x - lm[28].x) * W;
+
+    // 正值表示髖部朝屈膝側移動。
+    const hipShiftRatio =
+        (hips.x - ankles.x) * W *
+        Math.sign(bentAnkle.x - ankles.x) /
+        Math.max(stanceWidth, 1);
+
+    // 上半身相對畫面垂直方向的側傾角度。
+    const torsoTilt = Math.atan2(
+        Math.abs(shoulders.x - hips.x) * W,
+        (hips.y - shoulders.y) * H
+    ) * 180 / Math.PI;
+
+    const messages = [];
+
+    if (shoulders.y >= hips.y || hips.y >= ankles.y) {
+        messages.push("請正面站立，讓全身完整入鏡");
+    }
+
+    if (stanceWidth < legLength * 0.85) {
+        messages.push("請將雙腳向左右分開一些");
+    }
+
+    if (
+        Math.abs(lm[27].y - lm[28].y) * H >
+        legLength * 0.2
+    ) {
+        messages.push("請正面朝向鏡頭，讓雙腳都站在地面");
+    }
+
+    // 屈膝側的辨識範圍：75°～120°。
+    if (bentAngle > 120) {
+        messages.push("請在舒適範圍內，將一側膝蓋再彎一些");
+    } else if (bentAngle < 75) {
+        messages.push("請稍微抬高臀部，減少屈膝幅度");
+    }
+
+    // 另一側腿的膝蓋角度至少 155°。
+    if (straightAngle < 155) {
+        messages.push("請將另一側腿自然伸直");
+    }
+
+    if (hipShiftRatio < 0.08) {
+        messages.push("請將重心移向屈膝側");
+    }
+
+    if (torsoTilt > 35) {
+        messages.push("請保持上半身穩定，避免過度向側邊歪斜");
+    }
+
+    const isPerfect = messages.length === 0;
+
+    // 換邊時重新計時，避免左右兩側的秒數相加。
+    if (isPerfect && sideLungeHoldSide !== bentSide) {
+        resetHold();
+        sideLungeHoldSide = bentSide;
+    }
+
+    setStatus(isPerfect ? "perfect" : "error");
+
+    const secondsLeft = updateHold(isPerfect, "側弓箭步");
+
+    if (isPerfect) {
+        setText(
+            sideLungeStatusDiv,
+            secondsLeft > 0
+                ? `PERFECT！${bentSide}腿屈膝，請維持 ${secondsLeft} 秒...`
+                : "PERFECT！側弓箭步完成！",
+            COLOR_OK
+        );
+    } else {
+        setText(
+            sideLungeStatusDiv,
+            messages.join("\n"),
+            COLOR_ERR
+        );
+
+        messages.forEach(queueHint);
+    }
+}
 }
 
 // AI 偵測主迴圈
@@ -1437,6 +1620,9 @@ function onResults(results) {
                 case "triangle":
                     analyzeTriangle(landmarks);
                     break;
+                case "sidelunge":
+                    analyzeSideLunge(landmarks);
+                    break;
             }
         } catch (error) {
             console.warn("Pose processing error:", error);
@@ -1454,6 +1640,7 @@ function onResults(results) {
             sidestretch: [sideStretchStatusDiv],
             dancer: [dancerStatusDiv],
             triangle: [triangleStatusDiv]
+            sidelunge: [sideLungeStatusDiv],
         };
 
         const currentOutputs = outputs[currentPoseMode.toLowerCase()] || [];
@@ -2085,6 +2272,7 @@ function renderFavoritesChart(poseCounts) {
         "側腰拉伸": "#fab1a0",
         "舞王式": "#fd79a8" 
         "三角式": "#ffeaa7"
+        "側弓箭步": "#55efc4",
     };
 
     favoritesChart = new Chart(ctx, {
