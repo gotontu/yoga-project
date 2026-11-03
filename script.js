@@ -120,7 +120,7 @@ const POSE_DATABASE = [
         id: "tree",
         title: "大樹式",
         subtitle: "Tree Pose",
-        img: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=600&q=80",
+        img: "./images/tree.png",
         videoUrl: "https://www.youtube.com/embed/jMez5L0w4yI",
         desc: "大樹式能訓練下肢肌力、單腳平衡感與專注度。",
         tips: [
@@ -133,7 +133,7 @@ const POSE_DATABASE = [
         id: "squat",
         title: "深蹲",
         subtitle: "Squat",
-        img: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?auto=format&fit=crop&w=600&q=80",
+        img: "./images/squat.png",
         videoUrl: "https://www.youtube.com/embed/PpP98TMiVKY",
         desc: "深蹲能強化臀大肌、股四頭肌與核心穩定度。",
         tips: [
@@ -146,7 +146,7 @@ const POSE_DATABASE = [
         id: "Raise",
         title: "平舉",
         subtitle: "Raise",
-        img: "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?auto=format&fit=crop&w=600&q=80",
+        img: "./images/raise.png",
         videoUrl: "",
         desc: "平舉能增強肩膀三角肌與上肢控制力。",
         tips: [
@@ -159,7 +159,7 @@ const POSE_DATABASE = [
         id: "sideStretch",
         title: "側腰拉伸",
         subtitle: "Standing Side Stretch",
-        img: "https://images.pexels.com/photos/8809597/pexels-photo-8809597.jpeg?auto=compress&cs=tinysrgb&w=600",
+        img: "./images/sidelength.png",
         videoUrl: "",
         desc: "站姿側腰拉伸：單手向上延伸，身體緩慢向另一側側彎。",
         tips: [
@@ -172,7 +172,7 @@ const POSE_DATABASE = [
         id: "dancer",
         title: "舞王式",
         subtitle: "Dancer Pose",
-        img: "https://as.chdev.tw/web/article/photos/1/6/8/72da4784cdcf14ac1750a1901cabf2eaa6576b0f.jpg",
+        img: "./images/dance.png",
         videoUrl: "",
         desc: "舞王式能深度延展胸腔與肩膀、伸展大腿前側，並大幅增強單腳平衡感與核心力量。",
         tips: [
@@ -185,7 +185,7 @@ const POSE_DATABASE = [
         id: "triangle",
         title: "三角式",
         subtitle: "Triangle Pose",
-        img: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=600&q=80",
+        img: "./images/triangle.png",
         videoUrl: "",
         desc: "三角式能強化腿部與核心肌群，開展胸腔與髖關節，並深度延展大腿後側。",
         tips: [
@@ -198,7 +198,7 @@ const POSE_DATABASE = [
     id: "sideLunge",
     title: "側弓箭步",
     subtitle: "Side Lunge",
-    img: "./side-lunge.png",
+    img: "./images/sidelunge.png",
     videoUrl: "",
     desc: "雙腳向左右分開，一側屈膝，另一側腿伸直，重心移向屈膝側。",
     tips: [
