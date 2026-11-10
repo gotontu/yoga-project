@@ -1610,14 +1610,8 @@ function analyzeSideLunge(lm) {
 function analyzeCrossArmStretch(lm) {
     const poseName = "站立十字臂拉伸";
 
-    const requiredPoints = [
-        [11, "左肩"], [12, "右肩"],
-        [13, "左手肘"], [14, "右手肘"],
-        [15, "左手腕"], [16, "右手腕"]
-    ];
-
     const visible = i => {
-        const p = lm[i];
+        const p = lm?.[i];
 
         return p
             && Number.isFinite(p.x)
@@ -1634,132 +1628,71 @@ function analyzeCrossArmStretch(lm) {
         queueHint(message);
     };
 
-    const missingParts = requiredPoints
-        .filter(([i]) => !visible(i))
-        .map(([, name]) => name);
-
-    if (missingParts.length > 0) {
-        pauseDetection(
-            `請讓${missingParts.join("、")}完整入鏡`
-        );
+    // 雙肩用來判斷左右方向。
+    // 不再要求六個關節全部同時可見。
+    if (!visible(11) || !visible(12)) {
+        pauseDetection("請讓雙肩清楚入鏡");
         return;
     }
 
     const W = canvasElement?.width || 800;
-    const H = canvasElement?.height || 450;
+    const shoulderDelta = lm[12].x - lm[11].x;
 
-    const distance = (a, b) =>
-        Math.hypot(
-            (a.x - b.x) * W,
-            (a.y - b.y) * H
-        );
+    if (Math.abs(shoulderDelta) * W < 1) {
+        pauseDetection("請正面朝向鏡頭，讓雙肩清楚分開");
+        return;
+    }
 
-    const shoulderWidth = distance(lm[11], lm[12]);
+    // 左肩指向右肩的水平方向。
+    // 使用肩膀座標決定方向，避免鏡像時判斷顛倒。
+    const leftToRight = Math.sign(shoulderDelta);
 
-    const upperArmLength = (
-        distance(lm[11], lm[13]) +
-        distance(lm[12], lm[14])
-    ) / 2;
+    // 左臂判定只需要：左手腕 15、右手肘 14。
+    const leftDetectable = visible(15) && visible(14);
 
-    if (
-        shoulderWidth < 1
-        || upperArmLength < 1
-        || shoulderWidth < upperArmLength * 0.3
-    ) {
+    // 右臂判定只需要：右手腕 16、左手肘 13。
+    const rightDetectable = visible(16) && visible(13);
+
+    if (!leftDetectable && !rightDetectable) {
         pauseDetection(
-            "請正面朝向鏡頭，讓雙肩與手臂清楚入鏡"
+            "請讓左手腕與右手肘，或右手腕與左手肘清楚入鏡"
         );
         return;
     }
 
-    // 支撐手腕到被拉伸上臂的距離。
-    const distanceToSegment = (p, a, b) => {
-        const vx = (b.x - a.x) * W;
-        const vy = (b.y - a.y) * H;
-        const px = (p.x - a.x) * W;
-        const py = (p.y - a.y) * H;
+    // 條件 1：
+    // 左手腕沿跨胸方向，比右手肘更外面。
+    const leftCorrect = leftDetectable
+        && (lm[15].x - lm[14].x) * leftToRight > 0;
 
-        const t = Math.max(0, Math.min(
-            1,
-            (px * vx + py * vy) /
-                Math.max(vx * vx + vy * vy, 1)
-        ));
+    // 條件 2：
+    // 右手腕沿跨胸方向，比左手肘更外面。
+    const rightCorrect = rightDetectable
+        && (lm[16].x - lm[13].x) * -leftToRight > 0;
 
-        return Math.hypot(
-            px - t * vx,
-            py - t * vy
-        );
-    };
+    // 任一條件成立即可。
+    const correctSides = [];
 
-    // s/e/w：被拉伸側；os/oe/ow：另一側。
-    const checkArm = (s, e, w, os, oe, ow, side) => {
-        const dx = (lm[os].x - lm[s].x) * W;
-        const dy = (lm[os].y - lm[s].y) * H;
+    if (leftCorrect) correctSides.push("左");
+    if (rightCorrect) correctSides.push("右");
 
-        const across = p => (
-            (p.x - lm[s].x) * W * dx +
-            (p.y - lm[s].y) * H * dy
-        ) / shoulderWidth;
+    // 若兩側同時成立，優先維持目前計時的側別，
+    // 避免側別切換造成計時反覆重設。
+    const selectedSide = correctSides.includes(
+        crossArmStretchHoldSide
+    )
+        ? crossArmStretchHoldSide
+        : correctSides[0];
 
-        // 以肩寬作為胸前高度的比例尺。
-        const nearChest = [e, w].every(i => {
-            const offset = (lm[i].y - lm[s].y) * H;
-
-            return offset >= -shoulderWidth * 0.25
-                && offset <= shoulderWidth * 0.65;
-        });
-
-        const checks = [
-            [
-                calculateAngle(lm[s], lm[e], lm[w]) >= 140,
-                "請將橫過胸前的手臂自然伸直"
-            ],
-            [
-                across(lm[w]) >= shoulderWidth * 0.8
-                    && across(lm[e]) >= shoulderWidth * 0.25,
-                "請將一隻手臂橫跨胸前，伸向另一側"
-            ],
-            [
-                nearChest,
-                "請將橫跨的手臂維持在胸前、接近肩膀高度"
-            ],
-            [
-                calculateAngle(lm[os], lm[oe], lm[ow]) <= 135
-                    && lm[ow].y < lm[oe].y,
-                "請用另一手彎曲手肘，將前臂抬起"
-            ],
-            [
-                distanceToSegment(lm[ow], lm[s], lm[e])
-                    <= shoulderWidth * 0.55,
-                "請讓另一手靠近被拉伸手臂的上臂或手肘附近"
-            ]
-        ];
-
-        return {
-            side,
-            messages: checks
-                .filter(([passed]) => !passed)
-                .map(([, message]) => message)
-        };
-    };
-
-    const left = checkArm(11, 13, 15, 12, 14, 16, "左");
-    const right = checkArm(12, 14, 16, 11, 13, 15, "右");
-
-    const selected =
-        left.messages.length <= right.messages.length
-            ? left : right;
-
-    const messages = selected.messages;
-    const isPerfect = messages.length === 0;
+    const isPerfect = Boolean(selectedSide);
 
     // 換手時重新計時。
     if (
         isPerfect
-        && crossArmStretchHoldSide !== selected.side
+        && crossArmStretchHoldSide !== selectedSide
     ) {
         resetHold();
-        crossArmStretchHoldSide = selected.side;
+        crossArmStretchHoldSide = selectedSide;
     }
 
     setStatus(isPerfect ? "perfect" : "error");
@@ -1770,18 +1703,21 @@ function analyzeCrossArmStretch(lm) {
         setText(
             crossArmStretchStatusDiv,
             secondsLeft > 0
-                ? `PERFECT！拉伸${selected.side}臂，請維持 ${secondsLeft} 秒...`
+                ? `PERFECT！拉伸${selectedSide}臂，請維持 ${secondsLeft} 秒...`
                 : "PERFECT！站立十字臂拉伸完成！",
             COLOR_OK
         );
     } else {
+        const message =
+            "請將左手腕伸過右手肘外側，或將右手腕伸過左手肘外側";
+
         setText(
             crossArmStretchStatusDiv,
-            messages.join("\n"),
+            message,
             COLOR_ERR
         );
 
-        messages.forEach(queueHint);
+        queueHint(message);
     }
 }
 
