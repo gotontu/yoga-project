@@ -329,6 +329,111 @@ let crossArmStretchHoldSide = null;
 renderCheckInCalendar();
 
 // ==========================================
+// 網頁導覽：支援瀏覽器的返回與前進箭頭
+// ==========================================
+
+// 初始畫面：登入首頁。
+history.replaceState({
+    yogaPage: "landing",
+    poseId: null
+}, "");
+
+function navigatePage(page, {
+    poseId = null,
+    replace = false,
+    fromHistory = false
+} = {}) {
+    if (!["landing", "home", "workout"].includes(page)) {
+        page = "landing";
+    }
+
+    // 未登入時，只能顯示登入首頁。
+    if (!currentUser && page !== "landing") {
+        page = "landing";
+    }
+
+    const poseItem = page === "workout"
+        ? POSE_DATABASE.find(
+            p => p.id.toLowerCase() === String(poseId).toLowerCase()
+        )
+        : null;
+
+    // 找不到動作時，回到主卡片區。
+    if (page === "workout" && !poseItem) {
+        page = "home";
+    }
+
+    const state = {
+        yogaPage: page,
+        poseId: page === "workout" ? poseItem.id : null
+    };
+
+    const sameState =
+        history.state?.yogaPage === state.yogaPage
+        && history.state?.poseId === state.poseId;
+
+    if (fromHistory) {
+        // 返回或前進時，不再新增歷史紀錄。
+        // 若因未登入而變更目的畫面，修正目前紀錄。
+        if (!sameState) {
+            history.replaceState(state, "");
+        }
+    } else if (replace) {
+        history.replaceState(state, "");
+    } else if (!sameState) {
+        history.pushState(state, "");
+    }
+
+    // 切換畫面前，關閉面板並停止鏡頭、語音與計時。
+    closeAllPanels();
+    leaveWorkoutCleanup();
+
+    if (landingPage) {
+        landingPage.style.display =
+            page === "landing" ? "flex" : "none";
+    }
+
+    if (homeView) {
+        homeView.style.display =
+            page === "home" ? "flex" : "none";
+    }
+
+    if (workoutView) {
+        workoutView.style.display =
+            page === "workout" ? "flex" : "none";
+    }
+
+    if (page === "home") {
+        renderActionGrid();
+    } else if (page === "workout") {
+        selectedPoseId = poseItem.id;
+
+        if (currentWorkoutTitle) {
+            currentWorkoutTitle.innerText =
+                `${poseItem.title} 練習室`;
+        }
+
+        if (quickSwitchSelect) {
+            quickSwitchSelect.value = poseItem.id;
+        }
+
+        showPoseUI(poseItem.id);
+        startCamera();
+        openPoseIntro(poseItem.id);
+    }
+
+    window.scrollTo(0, 0);
+}
+
+// 使用瀏覽器的返回／前進箭頭時，還原對應畫面。
+window.addEventListener("popstate", event => {
+    navigatePage(event.state?.yogaPage ?? "landing", {
+        poseId: event.state?.poseId ?? null,
+        fromHistory: true
+    });
+});
+
+// ==========================================
 // 🌟 6. Firebase 身份驗證邏輯
 // ==========================================
 onAuthStateChanged(auth, user => {
@@ -366,12 +471,7 @@ onAuthStateChanged(auth, user => {
         if (userWelcome) {
             userWelcome.innerText = "請先登入以記錄你的練習成果";
         }
-
-        if (landingPage) landingPage.style.display = "flex";
-        if (homeView) homeView.style.display = "none";
-        if (workoutView) workoutView.style.display = "none";
-
-        leaveWorkoutCleanup();
+        navigatePage("landing", { replace: true });
     }
 });
 
@@ -383,9 +483,7 @@ loginBtn?.addEventListener("click", () => {
 });
 
 startBtn?.addEventListener("click", () => {
-    if (landingPage) landingPage.style.display = "none";
-    if (homeView) homeView.style.display = "flex";
-    renderActionGrid();
+    navigatePage("home");
 });
 
 logoutBtn?.addEventListener("click", () => {
@@ -425,30 +523,11 @@ function renderActionGrid() {
 }
 
 function enterWorkout(poseId) {
-    closeAllPanels();
-
-    if (homeView) homeView.style.display = "none";
-    if (workoutView) workoutView.style.display = "flex";
-
-    selectedPoseId = poseId;
-
-    const poseItem = POSE_DATABASE.find(p => p.id.toLowerCase() === poseId.toLowerCase());
-
-    if (currentWorkoutTitle && poseItem) {
-        currentWorkoutTitle.innerText = `${poseItem.title} 練習室`;
-    }
-
-    if (quickSwitchSelect) quickSwitchSelect.value = poseId;
-
-    showPoseUI(poseId);
-    startCamera();
-    openPoseIntro(poseId);
+    navigatePage("workout", { poseId });
 }
 
 btnBackHome?.addEventListener("click", () => {
-    if (workoutView) workoutView.style.display = "none";
-    if (homeView) homeView.style.display = "flex";
-    leaveWorkoutCleanup();
+    history.back();
 });
 
 function leaveWorkoutCleanup() {
