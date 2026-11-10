@@ -1165,7 +1165,7 @@ select:focus-visible {
 #video-container {
     position: relative;
     width: 100%;
-    max-width: 800px;
+    max-width: 1200px; /* 800 */
     aspect-ratio: 16 / 9;
     border-radius: 20px;
     overflow: hidden;
