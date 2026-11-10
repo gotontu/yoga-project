@@ -284,17 +284,7 @@
     <!-- 🌟 練習室 (Workout View) -->
     <div id="workout-view" class="workout-container" style="display: none;">
         
-        <!-- 🌟 教學影片獨立出來，不受左側 250px 寬度限制 -->
-        <div id="tutorial-video-container" class="hidden-container">
-            <iframe
-                id="tutorial-video"
-                title="動作教學影片"
-                allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-                referrerpolicy="strict-origin-when-cross-origin"
-                allowfullscreen>
-            </iframe>
-        </div>
-
+        <!-- 左側控制面板 -->
         <div class="left-control-panel">
             <button id="btn-back-home" class="back-home-btn">
                 ⬅️ 返回動作選單
@@ -317,8 +307,20 @@
                 </div>
                 <button id="btn-tutorial" class="tutorial-btn">教學</button>
             </div>
+
+            <!-- 🌟 教學影片容器（原本就在左邊面板，不擋住中間鏡頭） -->
+            <div id="tutorial-video-container" class="hidden-container">
+                <iframe
+                    id="tutorial-video"
+                    title="動作教學影片"
+                    allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                    referrerpolicy="strict-origin-when-cross-origin"
+                    allowfullscreen>
+                </iframe>
+            </div>
         </div>
 
+        <!-- 右側主要鏡頭偵測區 -->
         <div class="main-workout-area">
             <h2 id="current-workout-title">動作練習室</h2>
 
