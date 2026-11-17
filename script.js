@@ -2761,25 +2761,128 @@ document.getElementById("favorites-refresh-btn")?.addEventListener("click", () =
 });
 
 // ==========================================
-// 🌟 16. 郵件提醒功能模組 (EmailJS)
+// 🌟 16. 雙郵件排程模組：1. 運動提醒信 ＋ 2. 晚間今日紀錄信 (EmailJS)
 // ==========================================
 const EMAILJS_PUBLIC_KEY = "xfPxgJEpZ-Ur7Tq7e";
 const EMAILJS_SERVICE_ID = "service_k67ijnj";
 const EMAILJS_TEMPLATE_ID = "template_he8ob63";
 
-if (typeof emailjs !== 'undefined') {
+if (typeof emailjs !== "undefined") {
     emailjs.init(EMAILJS_PUBLIC_KEY);
 }
 
-const btnEmailRemind = document.getElementById('btn-email-remind');
-const emailModal = document.getElementById('email-modal');
-const btnCloseEmailModal = document.getElementById('btn-close-email-modal');
-const remindEmailInput = document.getElementById('remind-email-input');
-const remindTimeInput = document.getElementById('remind-time-input');
-const btnSendTestEmail = document.getElementById('btn-send-test-email');
-const btnSaveRemind = document.getElementById('btn-save-remind');
+const btnEmailRemind = document.getElementById("btn-email-remind");
+const emailModal = document.getElementById("email-modal");
+const btnCloseEmailModal = document.getElementById("btn-close-email-modal");
+const remindEmailInput = document.getElementById("remind-email-input");
+const remindTimeInput = document.getElementById("remind-time-input");
+const summaryTimeInput = document.getElementById("summary-time-input");
+const btnSendTestEmail = document.getElementById("btn-send-test-email");
+const btnSendTestSummary = document.getElementById("btn-send-test-summary");
+const btnSaveRemind = document.getElementById("btn-save-remind");
 
-btnEmailRemind?.addEventListener('click', async () => {
+function getTodayRecordDateStr() {
+    return new Date()
+        .toLocaleDateString("zh-TW")
+        .replace(/\//g, "-");
+}
+
+// 🌟 第一封信：催促開始使用系統的提醒信
+async function sendWorkoutReminder(user) {
+    if (!user?.email) return false;
+    try {
+        const templateParams = {
+            to_email: user.email,
+            user_name: user.displayName || "瑜珈夥伴",
+            message: "今天還沒練習瑜珈喔！打開鏡頭練習 5 分鐘，保持身心平衡吧！",
+            card_content: `
+                <div style="font-weight: 700; font-size: 14px; color: #8c7ae6; margin-bottom: 6px;">
+                    💡 今日瑜珈伸展小提醒
+                </div>
+                <div style="font-size: 13px; color: #747d8c; line-height: 1.6;">
+                    放下手邊工作，深吸一口氣，打開鏡頭完成「大樹式」或「深蹲」，點亮今天的練習日曆吧！
+                </div>
+            `
+        };
+        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams);
+        return true;
+    } catch (error) {
+        console.error("寄送運動提醒信失敗:", error);
+        return false;
+    }
+}
+
+// 🌟 第二封信：晚間統計今日完成進度 HTML 成績單
+async function buildTodayProgressHtml(userId) {
+    const todayStr = getTodayRecordDateStr();
+    const historyRef = collection(db, "users", userId, "history");
+    const snapshot = await getDocs(historyRef);
+
+    const poseCounter = new Map();
+    let totalPerfectToday = 0;
+
+    snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        if (data.date === todayStr && data.status === "Perfect") {
+            const poseName = normalizePoseName(data.lastPose || "未知動作");
+            poseCounter.set(poseName, (poseCounter.get(poseName) || 0) + 1);
+            totalPerfectToday++;
+        }
+    });
+
+    if (totalPerfectToday === 0) {
+        return {
+            messageHtml: `這是你 <strong>${todayStr}</strong> 的晚間練習進度結算：今天尚未累積任何 Perfect 動作紀錄喔！`,
+            cardHtml: `
+                <div style="font-weight: 700; font-size: 14px; color: #8c7ae6; margin-bottom: 6px;">
+                    🌙 今日練習明細 (${todayStr})
+                </div>
+                <div style="font-size: 13px; color: #747d8c; line-height: 1.6;">
+                    今日完成數：<strong>0 次</strong><br>
+                    明天記得找個空檔上線伸展 5 分鐘，累積你的瑜珈能量！
+                </div>
+            `
+        };
+    }
+
+    const earnedPoints = totalPerfectToday * 10;
+    const listItemsHtml = Array.from(poseCounter.entries())
+        .map(([poseName, count]) => `<li style="margin-bottom: 4px;"><strong>${escapeHtml(poseName)}</strong>：完成 ${count} 次 Perfect</li>`)
+        .join("");
+
+    return {
+        messageHtml: `辛苦了！這是你 <strong>${todayStr}</strong> 的晚間進度結算，今天總共完成了 <strong style="color: #5f27cd;">${totalPerfectToday} 次 Perfect</strong> 動作，共獲得 <strong style="color: #e056fd;">${earnedPoints} 積分</strong>！`,
+        cardHtml: `
+            <div style="font-weight: 700; font-size: 14px; color: #8c7ae6; margin-bottom: 8px;">
+                🏆 今日完成動作明細 (${todayStr})
+            </div>
+            <ul style="margin: 0; padding-left: 20px; font-size: 13.5px; color: #57606f; line-height: 1.7;">
+                ${listItemsHtml}
+            </ul>
+        `
+    };
+}
+
+async function sendDailySummaryReport(user) {
+    if (!user?.email) return false;
+    try {
+        const report = await buildTodayProgressHtml(user.uid);
+        const templateParams = {
+            to_email: user.email,
+            user_name: user.displayName || "瑜珈夥伴",
+            message: report.messageHtml,
+            card_content: report.cardHtml
+        };
+        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams);
+        return true;
+    } catch (error) {
+        console.error("寄送晚間今日紀錄失敗:", error);
+        return false;
+    }
+}
+
+// 開啟彈窗並載入資料庫中儲存的兩個時間
+btnEmailRemind?.addEventListener("click", async () => {
     if (!currentUser) {
         alert("請先登入帳號！");
         return;
@@ -2790,90 +2893,118 @@ btnEmailRemind?.addEventListener('click', async () => {
     try {
         const userPrefRef = doc(db, "users", currentUser.uid);
         const docSnap = await getDoc(userPrefRef);
-        if (docSnap.exists() && docSnap.data().remindTime) {
-            remindTimeInput.value = docSnap.data().remindTime;
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            if (data.remindTime && remindTimeInput) remindTimeInput.value = data.remindTime;
+            if (data.summaryTime && summaryTimeInput) summaryTimeInput.value = data.summaryTime;
         }
     } catch (e) {
         console.warn("讀取時間偏好失敗:", e);
     }
 
-    if (emailModal) emailModal.style.display = 'flex';
+    if (emailModal) emailModal.style.display = "flex";
 });
 
-btnCloseEmailModal?.addEventListener('click', () => {
-    if (emailModal) emailModal.style.display = 'none';
+btnCloseEmailModal?.addEventListener("click", () => {
+    if (emailModal) emailModal.style.display = "none";
 });
 
-async function sendWorkoutReminder(targetEmail, userName) {
-    try {
-        const templateParams = {
-            to_email: targetEmail,
-            user_name: userName || "瑜珈夥伴",
-            message: "今天還沒練習瑜珈喔！打開鏡頭練習 5 分鐘，保持身心平衡吧！"
-        };
-
-        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams);
-        return true;
-    } catch (error) {
-        console.error("寄送信件失敗:", error);
-        return false;
-    }
-}
-
-btnSendTestEmail?.addEventListener('click', async () => {
-    if (!currentUser || !currentUser.email) {
-        alert("無法讀取信箱，請確認是否已登入！");
-        return;
-    }
-
+// 測試第一封：運動提醒信
+btnSendTestEmail?.addEventListener("click", async () => {
+    if (!currentUser?.email) return;
     btnSendTestEmail.innerText = "寄送中...";
     btnSendTestEmail.disabled = true;
 
-    const isSuccess = await sendWorkoutReminder(currentUser.email, currentUser.displayName);
+    const ok = await sendWorkoutReminder(currentUser);
 
-    btnSendTestEmail.innerText = "立即寄送測試信";
+    btnSendTestEmail.innerText = "測試提醒信";
     btnSendTestEmail.disabled = false;
-
-    if (isSuccess) {
-        alert("測試信已寄出！請至信箱確認（若沒看到可檢查垃圾郵件匣）。");
-    } else {
-        alert("寄送失敗，請確認你的 EmailJS 三個金鑰是否填寫正確！");
-    }
+    alert(ok ? "第一封「運動提醒測試信」已寄出！" : "寄送失敗，請檢查 EmailJS 設定。");
 });
 
-btnSaveRemind?.addEventListener('click', async () => {
+// 測試第二封：晚間今日紀錄信
+btnSendTestSummary?.addEventListener("click", async () => {
+    if (!currentUser?.email) return;
+    btnSendTestSummary.innerText = "統計寄送中...";
+    btnSendTestSummary.disabled = true;
+
+    const ok = await sendDailySummaryReport(currentUser);
+
+    btnSendTestSummary.innerText = "測試今日紀錄信";
+    btnSendTestSummary.disabled = false;
+    alert(ok ? "第二封「晚間今日紀錄測試信」已寄出！" : "寄送失敗，請檢查 EmailJS 設定。");
+});
+
+// 儲存兩個時間設定到 Firestore
+btnSaveRemind?.addEventListener("click", async () => {
     if (!currentUser) return;
 
-    const timeValue = remindTimeInput.value;
+    const remindVal = remindTimeInput.value;
+    const summaryVal = summaryTimeInput?.value || "22:00";
+
     try {
         const userPrefRef = doc(db, "users", currentUser.uid);
         await setDoc(userPrefRef, {
             email: currentUser.email,
-            remindTime: timeValue,
+            remindTime: remindVal,
+            summaryTime: summaryVal,
             lastUpdated: new Date()
         }, { merge: true });
 
-        alert(`已設定完成！每日 ${timeValue} 將作為你的提醒時間。`);
-        if (emailModal) emailModal.style.display = 'none';
+        localStorage.removeItem(`sentRemind_${currentUser.uid}`);
+        localStorage.removeItem(`sentSummary_${currentUser.uid}`);
+
+        alert(`設定成功！\n• 每日運動提醒：${remindVal}\n• 晚間紀錄結算：${summaryVal}`);
+        if (emailModal) emailModal.style.display = "none";
     } catch (e) {
         console.error("儲存偏好失敗:", e);
         alert("儲存設定失敗，請稍後再試。");
     }
 });
 
-setInterval(() => {
-    if (!currentUser || !remindTimeInput) return;
+// 🌟 每 30 秒檢查一次：分別比對「運動提醒時間」與「晚間紀錄時間」
+setInterval(async () => {
+    if (!currentUser) return;
+
+    let targetRemind = remindTimeInput?.value;
+    let targetSummary = summaryTimeInput?.value;
+
+    if (!targetRemind || !targetSummary) {
+        try {
+            const snap = await getDoc(doc(db, "users", currentUser.uid));
+            const data = snap.data() || {};
+            if (data.remindTime) {
+                targetRemind = data.remindTime;
+                if (remindTimeInput) remindTimeInput.value = targetRemind;
+            }
+            if (data.summaryTime) {
+                targetSummary = data.summaryTime;
+                if (summaryTimeInput) summaryTimeInput.value = targetSummary;
+            }
+        } catch {
+            return;
+        }
+    }
 
     const now = new Date();
-    const currentHours = String(now.getHours()).padStart(2, '0');
-    const currentMinutes = String(now.getMinutes()).padStart(2, '0');
+    const currentHours = String(now.getHours()).padStart(2, "0");
+    const currentMinutes = String(now.getMinutes()).padStart(2, "0");
     const currentTimeStr = `${currentHours}:${currentMinutes}`;
+    const todayStr = getTodayRecordDateStr();
 
-    const todayStr = now.toLocaleDateString();
-    const lastSentDay = localStorage.getItem('lastReminderSentDate');
-
-    if (currentTimeStr === remindTimeInput.value && lastSentDay !== todayStr) {
-        sendWorkoutReminder(currentUser.email, currentUser.displayName);
-        localStorage.setItem('lastReminderSentDate', todayStr);
+    // 1. 檢查第一封：運動提醒信
+    const remindKey = `sentRemind_${currentUser.uid}`;
+    if (targetRemind && currentTimeStr === targetRemind && localStorage.getItem(remindKey) !== todayStr) {
+        localStorage.setItem(remindKey, todayStr);
+        const ok = await sendWorkoutReminder(currentUser);
+        if (!ok) localStorage.removeItem(remindKey);
     }
-}, 60000);
+
+    // 2. 檢查第二封：晚間今日紀錄結算信
+    const summaryKey = `sentSummary_${currentUser.uid}`;
+    if (targetSummary && currentTimeStr === targetSummary && localStorage.getItem(summaryKey) !== todayStr) {
+        localStorage.setItem(summaryKey, todayStr);
+        const ok = await sendDailySummaryReport(currentUser);
+        if (!ok) localStorage.removeItem(summaryKey);
+    }
+}, 30000);
