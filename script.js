@@ -125,7 +125,7 @@ const POSE_DATABASE = [
         title: "大樹式",
         subtitle: "Tree Pose",
         img: "image/tree.png",
-        videoUrl: "https://www.youtube.com/embed/jMez5L0w4yI",
+        videoUrl: "https://youtu.be/jCRAZC-yYKQ?si=GfceL04f21PJgHzx",
         desc: "大樹式能訓練下肢肌力、單腳平衡感與專注度。",
         tips: [
             "單腳伸直站穩，另一腳曲膝抬起貼於大腿或小腿內側",
@@ -138,7 +138,7 @@ const POSE_DATABASE = [
         title: "深蹲",
         subtitle: "Squat",
         img: "image/squat.png",
-        videoUrl: "https://www.youtube.com/embed/PpP98TMiVKY",
+        videoUrl: "https://youtube.com/shorts/CQNHqvFjljs",
         desc: "深蹲能強化臀大肌、股四頭肌與核心穩定度。",
         tips: [
             "雙腳與肩同寬，腳尖微外展 15-30 度",
@@ -151,7 +151,7 @@ const POSE_DATABASE = [
         title: "平舉",
         subtitle: "Raise",
         img: "image/raise.png",
-        videoUrl: "",
+        videoUrl: "https://youtu.be/ASEIOoRLi6k?si=Y4XijpWsS7ld0q1b",
         desc: "平舉能增強肩膀三角肌與上肢控制力。",
         tips: [
             "雙臂向兩側抬起與地面平行",
@@ -164,7 +164,7 @@ const POSE_DATABASE = [
         title: "側腰拉伸",
         subtitle: "Standing Side Stretch",
         img: "image/sidelength.png",
-        videoUrl: "",
+        videoUrl: "https://youtube.com/shorts/1b55p0FsTg0",
         desc: "站姿側腰拉伸：單手向上延伸，身體緩慢向另一側側彎。",
         tips: [
             "正面朝向鏡頭，讓雙手、髖部及雙腳完整入鏡",
@@ -177,7 +177,7 @@ const POSE_DATABASE = [
         title: "舞王式",
         subtitle: "Dancer Pose",
         img: "image/dance.png",
-        videoUrl: "",
+        videoUrl: "https://youtube.com/shorts/R7HMp_LOZ3M?feature=share",
         desc: "舞王式能深度延展胸腔與肩膀、伸展大腿前側，並大幅增強單腳平衡感與核心力量。",
         tips: [
             "單腳站穩伸直，另一腳曲膝向後上方抬起",
@@ -190,7 +190,7 @@ const POSE_DATABASE = [
         title: "三角式",
         subtitle: "Triangle Pose",
         img: "image/triangle.png",
-        videoUrl: "",
+        videoUrl: "https://youtube.com/shorts/VfVqvCF_seE?feature=share",
         desc: "三角式能強化腿部與核心肌群，開展胸腔與髖關節，並深度延展大腿後側。",
         tips: [
             "雙腳張開約兩倍肩寬，雙腿膝蓋保持伸直不微彎",
@@ -203,7 +203,7 @@ const POSE_DATABASE = [
         title: "側弓箭步",
         subtitle: "Side Lunge",
         img: "image/sidelunge.png",
-        videoUrl: "",
+        videoUrl: "https://youtube.com/shorts/KZdrZjsht7M?feature=share",
         desc: "雙腳向左右分開，一側屈膝，另一側腿伸直，重心移向屈膝側。",
         tips: [
             "正面朝向鏡頭，讓肩膀、髖部、膝蓋與雙腳完整入鏡",
@@ -217,7 +217,7 @@ const POSE_DATABASE = [
         title: "站立十字臂拉伸",
         subtitle: "Standing Cross-Body Shoulder Stretch",
         img: "image/cross-arm-stretch.png",
-        videoUrl: "",
+        videoUrl: "https://youtu.be/wSDwXhJz8DI?si=y0OFcNSrC0eRjZ3Y",
         desc: "站姿將一隻手臂橫跨胸前，另一手彎曲扶住上臂或手肘附近。",
         tips: [
             "正面朝向鏡頭，讓雙肩、手肘與手腕完整入鏡",
@@ -231,7 +231,7 @@ const POSE_DATABASE = [
         title: "英雄二式",
         subtitle: "Warrior II",
         img: "image/hero.png",
-        videoUrl: "",
+        videoUrl: "https://youtube.com/shorts/rikZSIladqw?feature=share",
         desc: "英雄二式能強化下肢與核心力量，開展骨盆與胸腔，並增強專注力與身體平衡感。",
         tips: [
             "雙腳大步張開，前腳屈膝約 90 度，後腳保持自然打直",
